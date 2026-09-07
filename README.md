@@ -6,9 +6,23 @@ A personal Unraid workload profiler. Observe physical-disk I/O for several days,
 
 ## Current status
 
-The local implementation includes the collector, SQLite persistence, timeout analysis, responsive UI, settings, CSV/JSON exports, tests, Docker files and Unraid XML template. Local Python and browser tests have passed. Docker is unavailable on the development machine, so image build and real Unraid acceptance remain outstanding. The GHCR image and remote repository have **not** been published by this build. The configured namespace is `kryptonite93/HDDIdleLogger` and the image name is `ghcr.io/kryptonite93/hddidlelogger`.
+The implementation includes the collector, SQLite persistence, timeout analysis, responsive UI, settings, CSV/JSON exports, tests, Docker files and Unraid XML template. All 23 Python tests and local browser checks passed. The [public repository](https://github.com/kryptonite93/HDDIdleLogger) is live; [GitHub Actions successfully built, smoke-tested and published the image](https://github.com/kryptonite93/HDDIdleLogger/actions/runs/34164617454). Image: `ghcr.io/kryptonite93/hddidlelogger:latest`. Public image access and the raw XML download were verified without GitHub credentials. Real Unraid acceptance remains outstanding.
 
 The owner requested personal use and has not chosen a license. No public reuse license is assigned in this repository. Upstream Python dependencies retain their own licenses. Community Applications submission, icon and support-thread assets are deferred.
+
+## Quick template installation on your server
+
+For your Unraid 7.3.1 server with the `cache` pool, run this in the Unraid terminal:
+
+```sh
+mkdir -p /mnt/cache/appdata/hdd-idle-profiler
+chown 99:100 /mnt/cache/appdata/hdd-idle-profiler
+chmod 750 /mnt/cache/appdata/hdd-idle-profiler
+curl -fL https://raw.githubusercontent.com/kryptonite93/HDDIdleLogger/main/unraid/unraid-hdd-idle-profiler.xml \
+  -o /boot/config/plugins/dockerMan/templates-user/my-hdd-idle-profiler.xml
+```
+
+Then open **Docker → Add Container**, select **HDD-Idle-Profiler**, check the port and cache path, and click **Apply**. Unraid downloads the prebuilt public image; it does not compile the source. Open its WebUI and check the discovered disks. This is a personal template, so it will not appear in Community Applications search yet. On a later reinstall, preserve an existing customized personal XML before downloading over it.
 
 ## Start locally
 
@@ -42,7 +56,7 @@ $env:SYS_BLOCK_PATH = "$PWD/tests/fixtures/sys"
 
 On Linux, use the corresponding environment variables before `python -m app.main`. Production binds to `0.0.0.0` on port 8080; use trusted networking. Run **one** Uvicorn worker and **one** container against a given data directory. Multiple collectors sharing one database are unsupported.
 
-## Install on Unraid before image publication
+## Build locally on Unraid (optional)
 
 Your confirmed target is **Unraid 7.3.1**, with the pool named **`cache`**. The commands below already use your appdata path: `/mnt/cache/appdata/hdd-idle-profiler`.
 
@@ -76,9 +90,9 @@ Alternatively, after preparing appdata, run `docker compose up -d --build`. Comp
 
 **Put `/data` on cache/pool storage.** Kernel-counter reads are designed not to wake disks, but SQLite checkpoint and event writes are real storage I/O. Appdata or Docker storage on a monitored array disk can contaminate the observation. This cannot be detected reliably from inside the container.
 
-## Install from the Unraid template after publication
+## Install from the Unraid template
 
-The raw template URL will be:
+The raw template URL is:
 
 ```text
 https://raw.githubusercontent.com/kryptonite93/HDDIdleLogger/main/unraid/unraid-hdd-idle-profiler.xml
@@ -158,6 +172,6 @@ The container build smoke test can be run with `docker build -t hdd-idle-profile
 
 `python -m pytest -q` exercises parsing, discovery, reset/restart/downtime boundaries, non-device reads, timeout arithmetic, normalization, confidence, settings, exports and API safety. `scripts/browser-check.cjs` uses Playwright plus installed Chrome against the synthetic preview to exercise 24 disks, sorting, polling focus, settings persistence and phone layouts. Set `PLAYWRIGHT_MODULE` if Playwright is outside the usual Node module path. Screenshots are written to ignored `artifacts/`.
 
-CI runs pytest, builds the Docker image and runs a fixture container smoke test. The separate **Publish image** workflow is manual; after creating/pushing the GitHub repository, trigger it to publish `latest` and a commit tag to GHCR. It requires repository Actions permissions to write packages. Choose repository/package visibility deliberately. The workflow is provided but has not been run in this environment.
+CI runs pytest, builds the Docker image and runs a fixture container smoke test. The **Publish image** workflow runs on pushes to `main` or manual dispatch, repeats the tests and container smoke check, then publishes `latest` and a commit tag to GHCR only after success. It requires repository Actions permissions to write packages. The initial build and publication succeeded on 2026-09-07. Public repository and package visibility were requested by the owner.
 
 The pinned Python image tag is listed in the [official Python image registry](https://hub.docker.com/_/python/tags?name=3.12.14-slim-bookworm). Runtime package pins were validated locally; Docker/Linux verification belongs to CI and the owner-run acceptance test.

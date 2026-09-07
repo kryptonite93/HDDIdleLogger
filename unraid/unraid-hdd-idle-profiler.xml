@@ -7,7 +7,7 @@
   <Privileged>false</Privileged>
   <Shell>sh</Shell>
   <Project>https://github.com/kryptonite93/HDDIdleLogger</Project>
-  <Overview>Observe kernel block I/O and estimate spin-down timeout effects. This app does not spin disks down, read files, run SMART, verify actual standby, or alter Unraid configuration. Keep the UI on a trusted LAN/VPN. Put appdata on cache/pool storage so database writes do not wake monitored array disks. Image publication and host acceptance are required before installation.</Overview>
+  <Overview>Observe kernel block I/O and estimate spin-down timeout effects. This app does not spin disks down, read files, run SMART, verify actual standby, or alter Unraid configuration. Keep the UI on a trusted LAN/VPN. Put appdata on cache/pool storage so database writes do not wake monitored array disks. After installing, verify disk selection and metadata on your host before relying on the results.</Overview>
   <Category>Tools:Utilities</Category>
   <WebUI>http://[IP]:[PORT:8080]/</WebUI>
   <TemplateURL>https://raw.githubusercontent.com/kryptonite93/HDDIdleLogger/main/unraid/unraid-hdd-idle-profiler.xml</TemplateURL>

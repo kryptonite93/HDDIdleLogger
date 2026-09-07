@@ -15,7 +15,7 @@ An Unraid owner with over 20 spinning disks, profiling media-server workloads fo
 Measure observed idle gaps from kernel counters and compare modeled spin cycles and down time for each disk and the array.
 
 ## Operating Context
-A Docker container on a trusted LAN/VPN. The owner will run the Unraid acceptance steps. GitHub namespace: kryptonite93. Working repository name follows the local folder: HDDIdleLogger; remote existence is unverified. License undecided; personal use requested.
+A Docker container on a trusted LAN/VPN. The owner will run the Unraid acceptance steps. Public GitHub repository: kryptonite93/HDDIdleLogger. Public repository and container image requested by the owner; GHCR publication and anonymous image access are verified. License undecided; personal use requested.
 
 Owner-confirmed deployment target: Unraid 7.3.1, pool named `cache`. Use `/mnt/cache/appdata/hdd-idle-profiler` for persistent appdata. Host acceptance has not yet been performed.
 
