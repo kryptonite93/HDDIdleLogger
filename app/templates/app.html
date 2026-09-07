@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HDD Idle Profiler</title>
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body data-page="{{ page }}" data-device="{{ device }}">
+  <a href="#main" class="skip">Skip to content</a>
+  <header class="app-header">
+    <a class="brand" href="/">HDD <span>Idle Profiler</span></a>
+    <nav aria-label="Main navigation">
+      <a href="/" {% if page == 'dashboard' or page == 'disk' %}aria-current="page"{% endif %}>Disks</a>
+      <a href="/analysis" {% if page == 'analysis' %}aria-current="page"{% endif %}>Array analysis</a>
+      <a href="/settings" {% if page == 'settings' %}aria-current="page"{% endif %}>Settings</a>
+    </nav>
+    <span id="collector-status" class="status">Connecting</span>
+  </header>
+  <main id="main">
+    {% if demo %}<aside class="notice" style="margin:0 0 24px"><strong>Synthetic preview.</strong> These 24 disks and all their observations are generated test data. No server disks are being monitored.</aside>{% endif %}
+    <div id="connection-error" class="notice error" role="alert" hidden></div>
+    <noscript><p class="notice">Enable JavaScript to view live observations and settings. JSON endpoints and downloads are listed in <a href="/openapi.json">the API schema</a>.</p></noscript>
+    {% if page == 'dashboard' %}
+    <div class="page-heading"><div><h1>Give your disks a little quiet.</h1><p>Observe the workload. Compare the timers. Choose with evidence.</p></div><a class="button" href="/analysis">Compare timeouts</a></div>
+    <section class="summary" aria-label="Observation summary" id="summary"><p>Waiting for the first reading…</p></section>
+    <section>
+      <div class="section-heading"><div><h2>Your disks</h2><p id="disk-count">Discovering physical disks…</p></div><a href="/settings">Manage selection</a></div>
+      <div id="disk-table" class="table-wrap" tabindex="0" aria-label="Disk observations, scroll horizontally for more columns"></div>
+      <div id="empty" class="empty" hidden><h2>Your observation starts here.</h2><p>Mount host <code>/proc/diskstats</code> read-only at <code>/host/proc/diskstats</code>. Selected physical HDDs will appear after the next sample.</p><p>No data yet is expected on a fresh installation. Check the collector message above and review <a href="/settings">device filters</a>.</p></div>
+    </section>
+    <aside class="notice"><strong>A model, not a power-state reading.</strong> Idle time is measured from observed block I/O. Timing is accurate to the sampling interval. Recommendations remain preliminary until each disk has 72 valid hours.</aside>
+    {% elif page == 'disk' %}
+    <a href="/" class="back">Back to all disks</a>
+    <div class="page-heading"><div><h1 id="disk-title">{{ device }}</h1><p id="disk-model">Loading disk observations…</p></div><span id="disk-state" class="status"></span></div>
+    <section class="summary" id="disk-summary" aria-label="Disk summary"></section>
+    <div class="section-heading"><div><h2>What changes with each timer?</h2><p id="recommendation"></p></div><a href="/settings">Edit tested timers</a></div>
+    <div id="timeout-table" class="table-wrap" tabindex="0" aria-label="Timeout comparison"></div>
+    <div class="chart-grid"><section><h2>Modeled down time</h2><p>Hours per observed day</p><div id="down-chart" class="bars"></div></section><section><h2>Modeled spin-ups</h2><p>Completed spin-ups per observed day</p><div id="cycles-chart" class="bars"></div></section></div>
+    <section><h2>How long are the quiet stretches?</h2><p>Completed intervals with a known beginning and end</p><div id="histogram" class="bars histogram"></div></section>
+    <aside class="notice" id="censor-note"></aside>
+    <section><div class="section-heading"><div><h2>Recent observations</h2><p>Activity, idle intervals and collection boundaries</p></div><div><button id="events-prev" disabled>Newer</button> <button id="events-next">Older</button></div></div><div id="events" class="table-wrap" tabindex="0" aria-label="Recent observations"></div></section>
+    {% elif page == 'analysis' %}
+    <div class="page-heading"><div><h1>Find room for quieter hours.</h1><p>Compare the combined effect across selected, present disks.</p></div><a class="button" href="/api/export/timeout-analysis.csv">Export analysis</a></div>
+    <section class="summary" id="array-summary" aria-label="Array summary"></section>
+    <section><h2>The array, timer by timer</h2><p>Daily totals sum each disk’s own valid observation rate. One disk-hour is one disk modeled down for one hour.</p><div id="array-table" class="table-wrap" tabindex="0" aria-label="Array timeout comparison"></div></section>
+    <div class="chart-grid"><section><h2>Modeled disk-hours down / day</h2><div id="array-down-chart" class="bars"></div></section><section><h2>Modeled spin-ups / day</h2><div id="array-cycles-chart" class="bars"></div></section></div>
+    <aside class="notice">The suggested array timer must meet the cycling threshold on every included disk and retain the configured share of maximum modeled down time. Per-disk choices may work better. Disabled, filtered and missing disks retain history but do not contribute here.</aside>
+    {% elif page == 'settings' %}
+    <div class="page-heading"><div><h1>Set up your observation.</h1><p>Changes persist across restarts. The profiler never changes Unraid settings.</p></div></div>
+    <form id="settings-form">
+      <div class="settings-grid"><section><h2>Collection</h2><label>Sample interval, seconds<input name="sample_interval_seconds" type="number" min="10" max="3600" required></label><p class="help">Default 30 seconds. The minimum is 10 seconds.</p><label>Include device regex<input name="include_device_regex" maxlength="200" required></label><label>Exclude device regex<input name="exclude_device_regex" maxlength="200"></label><p class="help">SSDs and partitions remain excluded. Unknown rotational metadata is shown for manual verification.</p><label>Display timezone<input name="timezone" placeholder="America/Toronto" required></label></section>
+      <section><h2>Timeout model</h2><label>Tested delays, minutes<input name="timeouts_minutes" placeholder="15, 30, 60, 120" required></label><p class="help">Comma-separated positive values; up to 20 timers.</p><label>Maximum completed spin-ups per disk / day<input name="cycling_warning_threshold" type="number" min="0.01" max="10000" step="any" required></label><label>Minimum share of best modeled down time, %<input name="efficiency_percent" type="number" min="0.01" max="100" step="any" required></label><p class="help">Prefer the shortest timer meeting both thresholds. No recommendation is shown when neither tradeoff is acceptable. Before 72 valid hours, any suggestion is preliminary.</p></section></div>
+      <section><h2>Disks to observe</h2><p>Disabling a disk preserves its history. Select disks whose rotational metadata is unknown only after verifying them in Unraid.</p><div id="disk-selection" class="selection"></div></section>
+      <div class="save-row"><button type="submit" class="primary" id="save-settings">Save settings</button><span id="save-result" role="status"></span></div>
+    </form>
+    <section class="exports"><h2>Take your results with you.</h2><p>CSV timestamps are UTC Unix seconds. JSON includes raw sessions, settings and metadata.</p><div class="export-links"><a class="button" href="/api/export/idle-intervals.csv">Idle intervals CSV</a><a class="button" href="/api/export/activity-events.csv">Activity events CSV</a><a class="button" href="/api/export/timeout-analysis.csv">Timeout analysis CSV</a><a class="button" href="/api/export/complete.json">Complete JSON</a></div></section>
+    <section class="danger"><h2>Start a fresh observation</h2><p>Clears all recorded history and keeps settings and disk selection. Download an export first if you want to retain these results.</p><form id="clear-form"><label>Type CLEAR HISTORY to confirm<input id="clear-confirm" autocomplete="off" required pattern="CLEAR HISTORY"></label><button type="submit">Clear history</button><span id="clear-result" role="status"></span></form></section>
+    {% endif %}
+  </main>
+  <footer><strong>Observation only.</strong> The collector reads kernel counters and metadata; it does not read your files or issue drive commands. Store appdata on cache/pool storage to avoid array writes. Keep this interface on a trusted LAN or VPN.<span id="updated-at"></span></footer>
+</body>
+</html>

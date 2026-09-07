@@ -1,0 +1,10 @@
+.venv
+data
+artifacts
+__pycache__
+.pytest_cache
+.git
+tests
+scripts
+*.md
+.impeccable

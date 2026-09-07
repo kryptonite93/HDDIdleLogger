@@ -1,0 +1,410 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-07T21:43:13.351Z",
+  "title": "Design System: HDD Idle Profiler",
+  "extensions": {
+    "colorMeta": {
+      "canvas": {
+        "role": "neutral",
+        "displayName": "canvas",
+        "tonalRamp": [
+          "oklch(15.00% 0.00669 115.71)",
+          "oklch(26.43% 0.00669 115.71)",
+          "oklch(37.86% 0.00669 115.71)",
+          "oklch(49.29% 0.00669 115.71)",
+          "oklch(60.71% 0.00669 115.71)",
+          "oklch(72.14% 0.00669 115.71)",
+          "oklch(83.57% 0.00669 115.71)",
+          "oklch(95.00% 0.00669 115.71)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "surface",
+        "tonalRamp": [
+          "oklch(15.00% 0.00000 89.88)",
+          "oklch(26.43% 0.00000 89.88)",
+          "oklch(37.86% 0.00000 89.88)",
+          "oklch(49.29% 0.00000 89.88)",
+          "oklch(60.71% 0.00000 89.88)",
+          "oklch(72.14% 0.00000 89.88)",
+          "oklch(83.57% 0.00000 89.88)",
+          "oklch(95.00% 0.00000 89.88)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "ink",
+        "tonalRamp": [
+          "oklch(15.00% 0.01684 183.80)",
+          "oklch(26.43% 0.01684 183.80)",
+          "oklch(37.86% 0.01684 183.80)",
+          "oklch(49.29% 0.01684 183.80)",
+          "oklch(60.71% 0.01684 183.80)",
+          "oklch(72.14% 0.01684 183.80)",
+          "oklch(83.57% 0.01684 183.80)",
+          "oklch(95.00% 0.01684 183.80)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "muted",
+        "tonalRamp": [
+          "oklch(15.00% 0.02055 178.60)",
+          "oklch(26.43% 0.02055 178.60)",
+          "oklch(37.86% 0.02055 178.60)",
+          "oklch(49.29% 0.02055 178.60)",
+          "oklch(60.71% 0.02055 178.60)",
+          "oklch(72.14% 0.02055 178.60)",
+          "oklch(83.57% 0.02055 178.60)",
+          "oklch(95.00% 0.02055 178.60)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "line",
+        "tonalRamp": [
+          "oklch(15.00% 0.01316 141.81)",
+          "oklch(26.43% 0.01316 141.81)",
+          "oklch(37.86% 0.01316 141.81)",
+          "oklch(49.29% 0.01316 141.81)",
+          "oklch(60.71% 0.01316 141.81)",
+          "oklch(72.14% 0.01316 141.81)",
+          "oklch(83.57% 0.01316 141.81)",
+          "oklch(95.00% 0.01316 141.81)"
+        ]
+      },
+      "accent": {
+        "role": "primary",
+        "displayName": "accent",
+        "tonalRamp": [
+          "oklch(15.00% 0.07537 181.31)",
+          "oklch(26.43% 0.07537 181.31)",
+          "oklch(37.86% 0.07537 181.31)",
+          "oklch(49.29% 0.07537 181.31)",
+          "oklch(60.71% 0.07537 181.31)",
+          "oklch(72.14% 0.07537 181.31)",
+          "oklch(83.57% 0.07537 181.31)",
+          "oklch(95.00% 0.07537 181.31)"
+        ]
+      },
+      "amber": {
+        "role": "neutral",
+        "displayName": "amber",
+        "tonalRamp": [
+          "oklch(15.00% 0.09563 73.22)",
+          "oklch(26.43% 0.09563 73.22)",
+          "oklch(37.86% 0.09563 73.22)",
+          "oklch(49.29% 0.09563 73.22)",
+          "oklch(60.71% 0.09563 73.22)",
+          "oklch(72.14% 0.09563 73.22)",
+          "oklch(83.57% 0.09563 73.22)",
+          "oklch(95.00% 0.09563 73.22)"
+        ]
+      },
+      "red": {
+        "role": "neutral",
+        "displayName": "red",
+        "tonalRamp": [
+          "oklch(15.00% 0.14733 26.65)",
+          "oklch(26.43% 0.14733 26.65)",
+          "oklch(37.86% 0.14733 26.65)",
+          "oklch(49.29% 0.14733 26.65)",
+          "oklch(60.71% 0.14733 26.65)",
+          "oklch(72.14% 0.14733 26.65)",
+          "oklch(83.57% 0.14733 26.65)",
+          "oklch(95.00% 0.14733 26.65)"
+        ]
+      },
+      "button-hover": {
+        "role": "neutral",
+        "displayName": "button hover",
+        "tonalRamp": [
+          "oklch(15.00% 0.01129 141.26)",
+          "oklch(26.43% 0.01129 141.26)",
+          "oklch(37.86% 0.01129 141.26)",
+          "oklch(49.29% 0.01129 141.26)",
+          "oklch(60.71% 0.01129 141.26)",
+          "oklch(72.14% 0.01129 141.26)",
+          "oklch(83.57% 0.01129 141.26)",
+          "oklch(95.00% 0.01129 141.26)"
+        ]
+      },
+      "button-hover-border": {
+        "role": "neutral",
+        "displayName": "button hover border",
+        "tonalRamp": [
+          "oklch(15.00% 0.02576 151.03)",
+          "oklch(26.43% 0.02576 151.03)",
+          "oklch(37.86% 0.02576 151.03)",
+          "oklch(49.29% 0.02576 151.03)",
+          "oklch(60.71% 0.02576 151.03)",
+          "oklch(72.14% 0.02576 151.03)",
+          "oklch(83.57% 0.02576 151.03)",
+          "oklch(95.00% 0.02576 151.03)"
+        ]
+      },
+      "accent-hover": {
+        "role": "primary",
+        "displayName": "accent hover",
+        "tonalRamp": [
+          "oklch(15.00% 0.06247 180.85)",
+          "oklch(26.43% 0.06247 180.85)",
+          "oklch(37.86% 0.06247 180.85)",
+          "oklch(49.29% 0.06247 180.85)",
+          "oklch(60.71% 0.06247 180.85)",
+          "oklch(72.14% 0.06247 180.85)",
+          "oklch(83.57% 0.06247 180.85)",
+          "oklch(95.00% 0.06247 180.85)"
+        ]
+      },
+      "focus": {
+        "role": "primary",
+        "displayName": "focus",
+        "tonalRamp": [
+          "oklch(15.00% 0.08529 179.36)",
+          "oklch(26.43% 0.08529 179.36)",
+          "oklch(37.86% 0.08529 179.36)",
+          "oklch(49.29% 0.08529 179.36)",
+          "oklch(60.71% 0.08529 179.36)",
+          "oklch(72.14% 0.08529 179.36)",
+          "oklch(83.57% 0.08529 179.36)",
+          "oklch(95.00% 0.08529 179.36)"
+        ]
+      },
+      "inset": {
+        "role": "neutral",
+        "displayName": "inset",
+        "tonalRamp": [
+          "oklch(15.00% 0.01237 137.78)",
+          "oklch(26.43% 0.01237 137.78)",
+          "oklch(37.86% 0.01237 137.78)",
+          "oklch(49.29% 0.01237 137.78)",
+          "oklch(60.71% 0.01237 137.78)",
+          "oklch(72.14% 0.01237 137.78)",
+          "oklch(83.57% 0.01237 137.78)",
+          "oklch(95.00% 0.01237 137.78)"
+        ]
+      },
+      "row-hover": {
+        "role": "neutral",
+        "displayName": "row hover",
+        "tonalRamp": [
+          "oklch(15.00% 0.00567 128.52)",
+          "oklch(26.43% 0.00567 128.52)",
+          "oklch(37.86% 0.00567 128.52)",
+          "oklch(49.29% 0.00567 128.52)",
+          "oklch(60.71% 0.00567 128.52)",
+          "oklch(72.14% 0.00567 128.52)",
+          "oklch(83.57% 0.00567 128.52)",
+          "oklch(95.00% 0.00567 128.52)"
+        ]
+      },
+      "notice-ink": {
+        "role": "neutral",
+        "displayName": "notice ink",
+        "tonalRamp": [
+          "oklch(15.00% 0.02617 166.22)",
+          "oklch(26.43% 0.02617 166.22)",
+          "oklch(37.86% 0.02617 166.22)",
+          "oklch(49.29% 0.02617 166.22)",
+          "oklch(60.71% 0.02617 166.22)",
+          "oklch(72.14% 0.02617 166.22)",
+          "oklch(83.57% 0.02617 166.22)",
+          "oklch(95.00% 0.02617 166.22)"
+        ]
+      },
+      "error-surface": {
+        "role": "neutral",
+        "displayName": "error surface",
+        "tonalRamp": [
+          "oklch(15.00% 0.01560 42.39)",
+          "oklch(26.43% 0.01560 42.39)",
+          "oklch(37.86% 0.01560 42.39)",
+          "oklch(49.29% 0.01560 42.39)",
+          "oklch(60.71% 0.01560 42.39)",
+          "oklch(72.14% 0.01560 42.39)",
+          "oklch(83.57% 0.01560 42.39)",
+          "oklch(95.00% 0.01560 42.39)"
+        ]
+      },
+      "error-border": {
+        "role": "neutral",
+        "displayName": "error border",
+        "tonalRamp": [
+          "oklch(15.00% 0.05115 41.58)",
+          "oklch(26.43% 0.05115 41.58)",
+          "oklch(37.86% 0.05115 41.58)",
+          "oklch(49.29% 0.05115 41.58)",
+          "oklch(60.71% 0.05115 41.58)",
+          "oklch(72.14% 0.05115 41.58)",
+          "oklch(83.57% 0.05115 41.58)",
+          "oklch(95.00% 0.05115 41.58)"
+        ]
+      },
+      "empty-border": {
+        "role": "neutral",
+        "displayName": "empty border",
+        "tonalRamp": [
+          "oklch(15.00% 0.03160 139.10)",
+          "oklch(26.43% 0.03160 139.10)",
+          "oklch(37.86% 0.03160 139.10)",
+          "oklch(49.29% 0.03160 139.10)",
+          "oklch(60.71% 0.03160 139.10)",
+          "oklch(72.14% 0.03160 139.10)",
+          "oklch(83.57% 0.03160 139.10)",
+          "oklch(95.00% 0.03160 139.10)"
+        ]
+      },
+      "bar-track": {
+        "role": "neutral",
+        "displayName": "bar track",
+        "tonalRamp": [
+          "oklch(15.00% 0.01603 130.43)",
+          "oklch(26.43% 0.01603 130.43)",
+          "oklch(37.86% 0.01603 130.43)",
+          "oklch(49.29% 0.01603 130.43)",
+          "oklch(60.71% 0.01603 130.43)",
+          "oklch(72.14% 0.01603 130.43)",
+          "oklch(83.57% 0.01603 130.43)",
+          "oklch(95.00% 0.01603 130.43)"
+        ]
+      },
+      "histogram": {
+        "role": "neutral",
+        "displayName": "histogram",
+        "tonalRamp": [
+          "oklch(15.00% 0.05553 134.40)",
+          "oklch(26.43% 0.05553 134.40)",
+          "oklch(37.86% 0.05553 134.40)",
+          "oklch(49.29% 0.05553 134.40)",
+          "oklch(60.71% 0.05553 134.40)",
+          "oklch(72.14% 0.05553 134.40)",
+          "oklch(83.57% 0.05553 134.40)",
+          "oklch(95.00% 0.05553 134.40)"
+        ]
+      },
+      "input-border": {
+        "role": "neutral",
+        "displayName": "input border",
+        "tonalRamp": [
+          "oklch(15.00% 0.02782 141.73)",
+          "oklch(26.43% 0.02782 141.73)",
+          "oklch(37.86% 0.02782 141.73)",
+          "oklch(49.29% 0.02782 141.73)",
+          "oklch(60.71% 0.02782 141.73)",
+          "oklch(72.14% 0.02782 141.73)",
+          "oklch(83.57% 0.02782 141.73)",
+          "oklch(95.00% 0.02782 141.73)"
+        ]
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "button-background",
+        "value": "background-color .15s ease-out",
+        "purpose": "Only under prefers-reduced-motion: no-preference."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "compact",
+        "value": "1000px"
+      },
+      {
+        "name": "narrow",
+        "value": "650px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Native operational action.",
+      "html": "<button class=\"ds-primary\">Save settings</button>",
+      "css": ".ds-primary{font-family:Segoe UI,system-ui,sans-serif;font-size:15px;line-height:1.5;border:1px solid var(--line,#d6ddd5);padding:10px 16px;border-radius:6px;font-weight:600;cursor:pointer;background:var(--accent,#17665b);color:#fff}.ds-primary:hover{background:#104e45;border-color:#9cac9f}.ds-primary:disabled{opacity:.5;cursor:default}.ds-primary:focus-visible{outline:3px solid var(--focus,#2c8374);outline-offset:4px}@media(prefers-reduced-motion:no-preference){.ds-primary{transition:background-color .15s ease-out}}"
+    },
+    {
+      "name": "Secondary button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Native operational action.",
+      "html": "<button class=\"ds-secondary\">Export analysis</button>",
+      "css": ".ds-secondary{font-family:Segoe UI,system-ui,sans-serif;font-size:15px;line-height:1.5;border:1px solid var(--line,#d6ddd5);padding:10px 16px;border-radius:6px;font-weight:600;cursor:pointer;background:var(--surface,#fff);color:var(--ink,#202c2a)}.ds-secondary:hover{background:#e6ece5;border-color:#9cac9f}.ds-secondary:disabled{opacity:.5;cursor:default}.ds-secondary:focus-visible{outline:3px solid var(--focus,#2c8374);outline-offset:4px}@media(prefers-reduced-motion:no-preference){.ds-secondary{transition:background-color .15s ease-out}}"
+    },
+    {
+      "name": "Destructive button",
+      "kind": "button",
+      "description": "Native operational action.",
+      "html": "<button class=\"ds-danger\">Clear history</button>",
+      "css": ".ds-danger{font-family:Segoe UI,system-ui,sans-serif;font-size:15px;line-height:1.5;border:1px solid var(--line,#d6ddd5);padding:10px 16px;border-radius:6px;font-weight:600;cursor:pointer;background:var(--surface,#fff);color:var(--red,#a3342f)}.ds-danger:hover{background:#e6ece5;border-color:#9cac9f}.ds-danger:disabled{opacity:.5;cursor:default}.ds-danger:focus-visible{outline:3px solid var(--focus,#2c8374);outline-offset:4px}@media(prefers-reduced-motion:no-preference){.ds-danger{transition:background-color .15s ease-out}}"
+    },
+    {
+      "name": "Labeled input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Native field with persistent label.",
+      "html": "<label class=\"ds-label\">Display timezone<input class=\"ds-input\" value=\"America/Toronto\"></label>",
+      "css": ".ds-label{display:block;font-weight:600;font-family:Segoe UI,system-ui,sans-serif;font-size:15px;line-height:1.5;}.ds-input{display:block;width:100%;max-width:500px;padding:10px 12px;margin-top:8px;border:1px solid #97a595;border-radius:5px;background:var(--surface,#fff);color:var(--ink,#202c2a);font-family:Segoe UI,system-ui,sans-serif;font-size:15px;line-height:1.5;}.ds-input:focus-visible{outline:3px solid var(--focus,#2c8374);outline-offset:4px}"
+    },
+    {
+      "name": "Navigation",
+      "kind": "nav",
+      "description": "Current destination has a bottom rule.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Main navigation\"><a href=\"#disks\" aria-current=\"page\">Disks</a><a href=\"#analysis\">Array analysis</a><a href=\"#settings\">Settings</a></nav>",
+      "css": ".ds-nav{display:flex;gap:28px;min-height:48px;font-family:Segoe UI,system-ui,sans-serif;font-size:15px;line-height:1.5;}.ds-nav a{display:flex;align-items:center;text-decoration:none;color:var(--muted,#53635f);border-bottom:3px solid transparent;padding-top:3px}.ds-nav a[aria-current]{border-color:var(--accent,#17665b);color:var(--ink,#202c2a);font-weight:650}.ds-nav a:focus-visible{outline:3px solid var(--focus,#2c8374);outline-offset:4px}"
+    },
+    {
+      "name": "Informational notice",
+      "kind": "card",
+      "refersTo": "notice",
+      "description": "Context beside the measurements.",
+      "html": "<aside class=\"ds-notice\"><strong>A model, not a power-state reading.</strong> Idle time is measured from observed block I/O.</aside>",
+      "css": ".ds-notice{padding:20px 24px;border:1px solid var(--line,#d6ddd5);border-radius:8px;background:#eaf0e8;color:#3e5048;font-family:Segoe UI,system-ui,sans-serif;font-size:15px;line-height:1.5;line-height:1.65}"
+    },
+    {
+      "name": "Labeled comparison bar",
+      "kind": "custom",
+      "description": "Track is decorative; label and number remain readable.",
+      "html": "<div class=\"ds-bar\"><span>30 min</span><div class=\"ds-track\" aria-hidden=\"true\"><div class=\"ds-fill\"></div></div><span class=\"ds-value\">12.4</span></div>",
+      "css": ".ds-bar{display:grid;grid-template-columns:64px 1fr 60px;gap:16px;align-items:center;font:13px/1.5 Segoe UI,system-ui,sans-serif;font-variant-numeric:tabular-nums}.ds-track{height:22px;background:#e1e7dc;border-radius:2px;overflow:hidden}.ds-fill{height:100%;width:62%;background:var(--accent,#17665b)}.ds-value{text-align:right}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Quiet Measurement Worksheet",
+    "overview": "The interface is a light working sheet for comparing disk observations. Warm off-white surrounds white tables, dark ink carries the measurements, and restrained teal marks links and known-idle status. System typography and tabular numerals support repeated scanning alongside the Unraid console.\n\nThe implemented world is flat and practical. Labeled numerical bars complement comparison tables; explanatory text preserves the distinction between observed I/O and modeled power behavior. Decorative imagery and concept mockups have no role in the handoff's chosen interface.",
+    "keyCharacteristics": [
+      "Light working surfaces with fine structural borders.",
+      "Modest system headings and tabular measurements.",
+      "Explicit state labels and persistent collection status.",
+      "Native controls, visible keyboard focus, and restrained state motion."
+    ],
+    "rules": [
+      {
+        "name": "The Labeled State Rule",
+        "body": "Color accompanies readable state text; it never supplies the only explanation.",
+        "section": "colors"
+      },
+      {
+        "name": "The Visible Focus Rule",
+        "body": "Interactive elements use a 3px teal outline with 4px offset on keyboard focus. Preserve the skip link, table-wrapper keyboard access and focus on refreshed disk links and sort controls.",
+        "section": "components"
+      }
+    ],
+    "dos": [
+      "**Do** keep measurements readable with tabular numerals, units, labels and comparison tables.",
+      "**Do** preserve readable status text, visible focus and unsaved settings during refresh.",
+      "**Do** use flat light surfaces and fine rules to organize dense operational information.",
+      "**Do** label modeled results, unknown interval beginnings, preliminary suggestions and synthetic observations explicitly."
+    ],
+    "donts": [
+      "**Don't** add decorative imagery, dramatic display typography or ornamental animation to this measurement interface.",
+      "**Don't** imply that observed idle counters are actual disk standby readings.",
+      "**Don't** hide table columns on mobile or make bars the sole source of numeric results.",
+      "**Don't** add shadows or floating metric cards to the established ruled worksheet layout."
+    ]
+  }
+}

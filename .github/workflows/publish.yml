@@ -1,0 +1,36 @@
+name: Publish image
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+  packages: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements-dev.txt && python -m pytest -q
+      - run: docker build -t hdd-idle-profiler:test .
+      - run: sh scripts/container-smoke.sh
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64
+          labels: |
+            org.opencontainers.image.source=https://github.com/kryptonite93/HDDIdleLogger
+            org.opencontainers.image.description=Observe disk I/O and model spin-down delays without controlling drives
+          tags: |
+            ghcr.io/kryptonite93/hddidlelogger:latest
+            ghcr.io/kryptonite93/hddidlelogger:${{ github.sha }}

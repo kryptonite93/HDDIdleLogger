@@ -1,0 +1,20 @@
+services:
+  hdd-idle-profiler:
+    build: .
+    image: ghcr.io/kryptonite93/hddidlelogger:latest
+    container_name: hdd-idle-profiler
+    restart: unless-stopped
+    user: "99:100"
+    ports:
+      - "8080:8080"
+    environment:
+      TZ: America/Toronto
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ${APPDATA_PATH:-/mnt/cache/appdata/hdd-idle-profiler}:/data
+      - /proc/diskstats:/host/proc/diskstats:ro
+      # Mount the full read-only sys tree so /sys/block's relative links resolve.
+      - /sys:/host/sys:ro

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Container version="2">
+  <Name>HDD-Idle-Profiler</Name>
+  <Repository>ghcr.io/kryptonite93/hddidlelogger:latest</Repository>
+  <Registry>https://github.com/kryptonite93/HDDIdleLogger/pkgs/container/hddidlelogger</Registry>
+  <Network>bridge</Network>
+  <Privileged>false</Privileged>
+  <Shell>sh</Shell>
+  <Project>https://github.com/kryptonite93/HDDIdleLogger</Project>
+  <Overview>Observe kernel block I/O and estimate spin-down timeout effects. This app does not spin disks down, read files, run SMART, verify actual standby, or alter Unraid configuration. Keep the UI on a trusted LAN/VPN. Put appdata on cache/pool storage so database writes do not wake monitored array disks. Image publication and host acceptance are required before installation.</Overview>
+  <Category>Tools:Utilities</Category>
+  <WebUI>http://[IP]:[PORT:8080]/</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/kryptonite93/HDDIdleLogger/main/unraid/unraid-hdd-idle-profiler.xml</TemplateURL>
+  <ExtraParams>--user=99:100 --cap-drop=ALL --security-opt=no-new-privileges:true</ExtraParams>
+  <Config Name="Web UI" Target="8080" Default="8080" Mode="tcp" Description="Trusted LAN/VPN only" Type="Port" Display="always" Required="true" Mask="false">8080</Config>
+  <Config Name="Appdata" Target="/data" Default="/mnt/cache/appdata/hdd-idle-profiler" Mode="rw" Description="Use your cache/pool path; create it writable by UID 99 and GID 100 before installing. Avoid monitored array disks." Type="Path" Display="always" Required="true" Mask="false">/mnt/cache/appdata/hdd-idle-profiler</Config>
+  <Config Name="Host diskstats" Target="/host/proc/diskstats" Default="/proc/diskstats" Mode="ro" Description="Kernel counters only" Type="Path" Display="always" Required="true" Mask="false">/proc/diskstats</Config>
+  <Config Name="Host sysfs" Target="/host/sys" Default="/sys" Mode="ro" Description="Read-only metadata. Full tree resolves relative /sys/block links; the app reads only block metadata." Type="Path" Display="advanced" Required="false" Mask="false">/sys</Config>
+  <Config Name="Timezone" Target="TZ" Default="America/Toronto" Mode="" Description="Initial display timezone" Type="Variable" Display="always" Required="true" Mask="false">America/Toronto</Config>
+  <Config Name="Sample interval" Target="SAMPLE_INTERVAL_SECONDS" Default="30" Mode="" Description="Initial cadence, minimum 10 seconds; UI settings override after first start" Type="Variable" Display="advanced" Required="true" Mask="false">30</Config>
+  <Config Name="Include regex" Target="INCLUDE_DEVICE_REGEX" Default="^sd[a-z]+$" Mode="" Description="Initial whole-disk filter" Type="Variable" Display="advanced" Required="true" Mask="false">^sd[a-z]+$</Config>
+  <Config Name="Exclude regex" Target="EXCLUDE_DEVICE_REGEX" Default="" Mode="" Description="Additional exclusion regex" Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
+</Container>
