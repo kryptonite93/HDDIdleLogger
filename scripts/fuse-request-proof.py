@@ -96,6 +96,17 @@ class Correlator:
         self.scopes = {}
         self.opens = {}
         self.counts = Counter()
+        self.sources = {'container': Counter(), 'host': Counter()}
+        self.examples = Counter()
+
+    def source_summaries(self):
+        rows = []
+        for category in ('container', 'host'):
+            for (cid, process, disk), count in sorted(self.sources[category].items(), key=lambda item: (-item[1], item[0])):
+                rows.append({'kind': 'candidate_source_summary', 'container_id': cid,
+                             'process': process, 'disk': disk, 'matched_backing_opens': count,
+                             'physical_spin_up_proven': False})
+        return rows
 
     def reset(self):
         self.pending.clear()
@@ -158,7 +169,17 @@ class Correlator:
                     self.counts['matched_backing_opens'] += 1
                     if identity['container_id']:
                         self.counts['container_backing_opens'] += 1
-                    if self.counts['matched_backing_opens'] <= 20:
+                    category = 'container' if identity['container_id'] else 'host'
+                    key = (identity['container_id'], identity['process'], opened[1])
+                    sources = self.sources[category]
+                    # Separate bounds keep busy host activity from consuming
+                    # either the container examples or the container summary.
+                    if key in sources or len(sources) < 256:
+                        sources[key] += 1
+                    else:
+                        self.counts[category+'_summary_omitted_opens'] += 1
+                    if self.examples[category] < (20 if category == 'container' else 5):
+                        self.examples[category] += 1
                         self.emit({'kind': 'candidate_request_to_open', 'disk': opened[1],
                                    'worker_tid': tid, **identity,
                                    'physical_spin_up_proven': False})
@@ -257,7 +278,7 @@ def capture(library, symbols, root, proc, seconds):
         write(instance/'events'/group/name/'enable', 1)
 
     try:
-        output({'state': 'proof_setup', 'diagnostic_version': 3, 'worker_threads': len(workers)})
+        output({'state': 'proof_setup', 'diagnostic_version': 4, 'worker_threads': len(workers)})
         mark('create_instance', instance)
         instance.mkdir()
         owned = True
@@ -316,6 +337,8 @@ def capture(library, symbols, root, proc, seconds):
                 if 'LOST' in line and 'EVENT' in line:
                     raise ValueError('Trace loss marker; proof aborted')
                 correlation.accept(parse_line(line))
+        for summary in correlation.source_summaries():
+            output(summary)
         output({'state': 'proof_finished', 'counts': dict(correlation.counts),
                 'note': 'Candidates require comparison with your known operation. No dashboard attribution or physical spin-up claim was recorded.'})
     except OSError as exc:

@@ -190,3 +190,45 @@ def test_probe_commands_preserve_existing_definitions_and_do_not_create_controls
     with pytest.raises(FileNotFoundError):
         proof.append_probe_command(missing, 'p:hddproof_test/ctx_in /library:0x456')
     assert not missing.exists()
+
+
+def test_host_burst_cannot_hide_later_container_opens():
+    events = []
+    identities = {
+        100: {'pid': 100, 'process': 'emhttpd', 'container_id': None},
+        200: {'pid': 200, 'process': 'Plex Media', 'container_id': 'test-plex-id'},
+    }
+    capture = proof.Correlator(lambda pid, stamp: identities[pid], events.append)
+    context(capture, 10, 100, 777)
+    for _ in range(1176):
+        capture.accept((10, 1.03, 'backing_open', {'filename': '/mnt/disk1/private-name'}))
+        capture.accept((10, 1.04, 'backing_done', {'fd': '3'}))
+    context(capture, 20, 200, 888, now=2)
+    for _ in range(22):
+        capture.accept((20, 2.03, 'backing_open', {'filename': '/mnt/disk7/private-name'}))
+        capture.accept((20, 2.04, 'backing_done', {'fd': '4'}))
+    assert any(row['container_id'] == 'test-plex-id' for row in events)
+    summaries = capture.source_summaries()
+    assert summaries[0]['container_id'] == 'test-plex-id'
+    assert summaries[0]['disk'] == 'disk7'
+    assert summaries[0]['matched_backing_opens'] == 22
+    assert summaries[1]['matched_backing_opens'] == 1176
+    assert all(not row['physical_spin_up_proven'] for row in summaries)
+    assert 'private-name' not in str(summaries)
+    assert len(events) <= 25
+
+
+def test_host_summary_overflow_leaves_room_for_container_results():
+    capture = proof.Correlator(lambda pid, stamp: {
+        'pid': pid, 'process': f'process{pid}', 'container_id': 'test-container' if pid == 1000 else None,
+    }, lambda row: None)
+    for index, pid in enumerate([*range(1, 258), 1000]):
+        now = index+1
+        context(capture, 10, pid, pid, now=now)
+        capture.accept((10, now+.03, 'backing_open', {'filename': '/mnt/disk1/a'}))
+        capture.accept((10, now+.04, 'backing_done', {'fd': '3'}))
+    rows = capture.source_summaries()
+    assert len(rows) == 257
+    assert rows[0]['container_id'] == 'test-container'
+    assert capture.counts['host_summary_omitted_opens'] == 1
+    assert capture.counts['matched_backing_opens'] == sum(row['matched_backing_opens'] for row in rows)+1
