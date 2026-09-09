@@ -25,8 +25,7 @@ def activity_sources(name: str, request: Request, offset: int = Query(0, ge=0), 
     if not db.rows('SELECT 1 FROM disks WHERE device_name=?', (name,)):
         raise HTTPException(404, 'Disk not found')
     return {'status': request.app.state.attribution.status(), 'offset': offset, 'limit': limit,
-            'events': db.rows('SELECT * FROM attribution_events WHERE disk_name=? ORDER BY id DESC LIMIT ? OFFSET ?',
-                             (name, limit, offset))}
+            'events': []}  # Retired physical-layer records remain available in exports only.
 
 
 def snapshot(request):
@@ -45,9 +44,7 @@ def snapshot(request):
             event = connection.execute("SELECT * FROM activity_events WHERE disk_name=? ORDER BY id DESC LIMIT 1",
                                        (disk["device_name"],)).fetchone()
             disk["last_io"] = dict(event) if event else None
-            source = connection.execute("SELECT * FROM attribution_events WHERE disk_name=? ORDER BY id DESC LIMIT 1",
-                                        (disk["device_name"],)).fetchone()
-            disk["latest_source"] = dict(source) if source else None
+            disk["latest_source"] = None  # Do not present retired worker attribution as a cause.
     for disk in disks:
         name = disk["device_name"]
         disk.update(analyze(intervals[name], sessions[name], collector.settings))

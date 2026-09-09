@@ -12,7 +12,7 @@ from .api import router
 from .collector import Collector
 from .config import Config, Settings
 from .database import Database
-from .attribution import Attribution
+from .source_status import SourceStatus
 
 
 def create_app(config=None, start_collector=True):
@@ -25,15 +25,12 @@ def create_app(config=None, start_collector=True):
         db.save_settings(settings)
         collector = Collector(db, config, settings)
         application.state.db, application.state.collector = db, collector
-        attribution = Attribution(db, config, collector)
-        application.state.attribution = attribution
+        application.state.attribution = SourceStatus()
         if start_collector:
             collector.start()
-            attribution.start()
         try:
             yield
         finally:
-            attribution.stop()
             collector.stop()
 
     application = FastAPI(title="HDD Idle Profiler", lifespan=lifespan, docs_url=None, redoc_url=None)

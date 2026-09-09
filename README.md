@@ -1,6 +1,6 @@
 # HDD Idle Profiler
 
-Optional **activity source capture** shows the process/container issuing a disk request after a quiet period. It runs inside the existing container with explicitly enabled host access. See [Unraid setup and limitations](unraid/ATTRIBUTION.md). It reports likely activity sources, not confirmed physical spin-ups, and does not attribute older history.
+The physical-disk activity tracer has been **removed**: on Unraid it identified `mdunraidd` workers rather than the originating container. Idle profiling continues normally. Request-level tracing is under investigation; see [replacement progress and compatibility check](unraid/ATTRIBUTION.md). Old source records are retained for export but excluded from the dashboard.
 
 A personal Unraid workload profiler. Observe physical-disk I/O for several days, then compare 15, 30, 60 and 120 minute spin-down delays before changing anything in Unraid.
 

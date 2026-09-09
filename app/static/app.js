@@ -14,6 +14,7 @@ function duration(value) {
 let timezone, diskData = [], sortKey = "device_name", sortDirection = 1, eventOffset = 0;
 let sourceOffset = 0;
 function sourceStatus(s) {
+  if (s.state === "retired") return s.error;
   if (!s.enabled) return "Capture is off. Existing records are kept. Enable optional capture to identify future activity sources.";
   if (s.state !== "capturing") return `Capture ${s.state}. ${s.error || "Waiting for capture to start."} Disk idle profiling continues independently.`;
   return `Capturing ${num(s.traced_disks)} disks: requests after at least ${duration(s.idle_threshold_seconds)} without traced I/O. ${s.dropped_events ? `${num(s.dropped_events)} trace events lost; some activity may be missing.` : "No trace loss reported."} First requests after capture starts have an unknown quiet duration.`;
@@ -58,7 +59,7 @@ const medianNote = d => d.estimated_quiet_interval_count ? "Includes older estim
 const sourceLabel = source => source?.container_name || (source?.container_id ? `Container ${source.container_id.slice(0,12)}` : source?.process || null);
 function sourceCell(d) {
   const source = d.latest_source;
-  if (!source) return '—<small>No source captured yet</small>';
+  if (!source) return '—<small>Replacement capture pending</small>';
   const evidence = source.attribution === "container_cgroup" ? "Container issuer" : source.attribution === "host_or_kernel" ? "Host/kernel issuer; original source unknown" : "Process unresolved";
   return `${esc(sourceLabel(source))}<small>${esc(evidence)}</small><small>Captured ${esc(timestamp(source.observed_at))}</small>`;
 }

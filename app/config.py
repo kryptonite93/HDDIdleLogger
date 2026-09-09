@@ -57,10 +57,3 @@ class Config:
         self.diskstats_path = Path(os.getenv("DISKSTATS_PATH", "/host/proc/diskstats"))
         self.sys_block_path = Path(os.getenv("SYS_BLOCK_PATH", "/host/sys/block"))
         self.boot_id_path = Path(os.getenv("BOOT_ID_PATH", "/proc/sys/kernel/random/boot_id"))
-        self.attribution_enabled = os.getenv("ATTRIBUTION_ENABLED", "false").lower() == "true"
-        self.attribution_idle_seconds = int(os.getenv("ATTRIBUTION_IDLE_SECONDS", "60"))
-        if not 10 <= self.attribution_idle_seconds <= 86400:
-            raise ValueError("ATTRIBUTION_IDLE_SECONDS must be between 10 and 86400")
-        self.tracefs_path = Path(os.getenv("TRACEFS_PATH", "/host/tracing"))
-        self.host_proc_path = Path(os.getenv("HOST_PROC_PATH", "/host/processes"))
-        self.docker_metadata_path = Path(os.getenv("DOCKER_METADATA_PATH", "/host/docker-containers"))
