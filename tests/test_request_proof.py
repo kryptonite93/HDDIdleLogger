@@ -174,3 +174,19 @@ def test_filter_rejection_preserves_kernel_feedback(tmp_path):
     (event/'filter').write_text('common_pid == 123\n^\nparse_error: rejected predicate')
     result = proof.failure_diagnostics(tmp_path, instance, group, {'path': str(event/'filter')})
     assert 'rejected predicate' in result['setting_feedback']
+
+
+def test_probe_commands_preserve_existing_definitions_and_do_not_create_controls(tmp_path):
+    path = tmp_path/'uprobe_events'
+    path.write_text('p:other_tool/keep /library:0x123\n')
+    proof.append_probe_command(path, 'p:hddproof_test/ctx_in /library:0x456')
+    proof.append_probe_command(path, '-:hddproof_test/ctx_in')
+    assert path.read_text().splitlines() == [
+        'p:other_tool/keep /library:0x123',
+        'p:hddproof_test/ctx_in /library:0x456',
+        '-:hddproof_test/ctx_in',
+    ]
+    missing = tmp_path/'missing_control'
+    with pytest.raises(FileNotFoundError):
+        proof.append_probe_command(missing, 'p:hddproof_test/ctx_in /library:0x456')
+    assert not missing.exists()

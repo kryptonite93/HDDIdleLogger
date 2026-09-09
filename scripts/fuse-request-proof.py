@@ -5,6 +5,7 @@ Uses the public fuse_ctx ABI (uid, gid, pid, umask), not kernel structure offset
 """
 import argparse
 from collections import Counter
+import errno
 import json
 import os
 from pathlib import Path
@@ -177,6 +178,20 @@ def shfs_threads(proc):
     return result
 
 
+def append_probe_command(path, command):
+    # Python open(..., 'a') performs SEEK_END during initialization. tracefs
+    # probe controls use seq_lseek and reject that seek with EINVAL before any
+    # command is written. Raw append writes also avoid O_TRUNC, which would
+    # remove other tools' probe definitions, and O_CREAT on missing controls.
+    payload = (command+'\n').encode('utf-8')
+    fd = os.open(path, os.O_WRONLY | os.O_APPEND)
+    try:
+        if os.write(fd, payload) != len(payload):
+            raise OSError(errno.EIO, 'Incomplete probe command write', str(path))
+    finally:
+        os.close(fd)
+
+
 def failure_diagnostics(root, instance, group, step):
     """Read only this run's kernel diagnostics; never clear shared error logs."""
     result = {}
@@ -236,14 +251,13 @@ def capture(library, symbols, root, proc, seconds):
         path.write_text(str(value)+'\n')
     def register(control, name, definition):
         mark('register_probe', root/control, definition)
-        with (root/control).open('a') as handle:
-            handle.write(definition+'\n')
+        append_probe_command(root/control, definition)
         registered.append((control, name))
         write(instance/'events'/group/name/'filter', ' || '.join(f'common_pid == {tid}' for tid in sorted(workers)))
         write(instance/'events'/group/name/'enable', 1)
 
     try:
-        output({'state': 'proof_setup', 'diagnostic_version': 2, 'worker_threads': len(workers)})
+        output({'state': 'proof_setup', 'diagnostic_version': 3, 'worker_threads': len(workers)})
         mark('create_instance', instance)
         instance.mkdir()
         owned = True
@@ -334,8 +348,7 @@ def capture(library, symbols, root, proc, seconds):
                 errors.append(str(exc))
         for control, name in reversed(registered):
             try:
-                with (root/control).open('a') as handle:
-                    handle.write(f'-:{group}/{name}\n')
+                append_probe_command(root/control, f'-:{group}/{name}')
             except OSError as exc:
                 errors.append(str(exc))
         for sig, handler in old_handlers.items():
