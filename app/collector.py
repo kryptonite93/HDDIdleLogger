@@ -44,7 +44,7 @@ class Collector:
         connection.execute("UPDATE observation_sessions SET ended_at=? WHERE id=?", (end, row["id"]))
         if end > row["idle_started_at"]:
             connection.execute("""INSERT INTO idle_intervals(session_id,disk_name,started_at,ended_at,
-             duration_seconds,start_is_censored,end_is_censored) VALUES (?,?,?,?,?,?,1)""",
+             duration_seconds,start_is_censored,end_is_censored,quiet_sample_observed) VALUES (?,?,?,?,?,?,1,1)""",
              (row["id"], row["disk_name"], row["idle_started_at"], end,
               end-row["idle_started_at"], int(row["last_activity_at"] is None)))
         self.event(connection, row["disk_name"], reason, now)
@@ -107,9 +107,10 @@ class Collector:
                         if any(delta.values()):
                             duration = now - previous["idle_started_at"]
                             connection.execute("""INSERT INTO idle_intervals(session_id,disk_name,started_at,ended_at,
-                             duration_seconds,start_is_censored) VALUES (?,?,?,?,?,?)""",
+                             duration_seconds,start_is_censored,quiet_sample_observed) VALUES (?,?,?,?,?,?,?)""",
                              (previous["id"], name, previous["idle_started_at"], now, duration,
-                              int(previous["last_activity_at"] is None)))
+                              int(previous["last_activity_at"] is None),
+                              int(previous["last_observed_at"] > previous["idle_started_at"])))
                             connection.execute("""INSERT INTO activity_events(session_id,disk_name,observed_at,
                              reads_delta,writes_delta,bytes_read_delta,bytes_written_delta,discards_delta,
                              bytes_discarded_delta,flushes_delta) VALUES (?,?,?,?,?,?,?,?,?,?)""",

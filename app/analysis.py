@@ -12,6 +12,27 @@ def percentile(values, fraction):
 
 
 def analyze(intervals, sessions, settings):
+    cadences = {s.get("id"): s.get("sample_interval_seconds", settings.sample_interval_seconds) for s in sessions}
+
+    def quiet(interval):
+        observed = interval.get("quiet_sample_observed")
+        if observed is not None:
+            return bool(observed)
+        # Version 1 did not store quiet polls. Allow scheduling jitter around one
+        # poll, and label this cadence-based reconstruction as an estimate.
+        cadence = cadences.get(interval.get("session_id"), settings.sample_interval_seconds)
+        return interval["duration_seconds"] >= cadence * 1.5
+
+    quiet_intervals = [i for i in intervals if quiet(i)]
+    quiet_complete = [i["duration_seconds"] for i in quiet_intervals
+                      if not i["start_is_censored"] and not i["end_is_censored"]]
+    longest_candidates = [(i["duration_seconds"], False,
+                           bool(i["start_is_censored"] or i["end_is_censored"]),
+                           i.get("quiet_sample_observed") is None) for i in quiet_intervals]
+    longest_candidates.extend((s["last_observed_at"]-s["idle_started_at"], True, True, False)
+                              for s in sessions if s["ended_at"] is None
+                              and s["last_observed_at"] > s["idle_started_at"])
+    longest = max(longest_candidates, default=(None, False, False, False))
     valid_seconds = sum(max(0, s["last_observed_at"]-s["started_at"]) for s in sessions)
     complete = [i["duration_seconds"] for i in intervals
                 if not i["start_is_censored"] and not i["end_is_censored"]]
@@ -38,7 +59,7 @@ def analyze(intervals, sessions, settings):
                      "current_potential_spun_down_hours": current_down/3600,
                      "percent_valid_time": total/valid_seconds*100 if valid_seconds else 0})
     maximum = max((r["spun_down_hours"] for r in rows), default=0)
-    # Left-censored first intervals never contribute to recommendation or statistics.
+    # Left-censored first intervals never contribute to recommendations or percentiles.
     choices = [r for r in rows if r["spin_ups_per_day"] <= settings.cycling_warning_threshold
                and r["spun_down_hours"] >= maximum*settings.recommendation_efficiency_threshold]
     recommendation = min((r["timeout_minutes"] for r in choices), default=None) if maximum > 0 else None
@@ -47,11 +68,17 @@ def analyze(intervals, sessions, settings):
     histogram = []
     lower = 0
     for label, upper in zip(labels, boundaries):
-        histogram.append({"label": label, "count": sum(lower <= v < upper for v in complete)})
+        histogram.append({"label": label, "count": sum(lower <= v < upper for v in quiet_complete)})
         lower = upper
-    return {"valid_observation_seconds": valid_seconds, "completed_interval_count": len(complete),
-            "longest_idle_seconds": max(complete, default=None), "median_idle_seconds": percentile(complete, 0.5),
-            "p75_idle_seconds": percentile(complete, 0.75), "p90_idle_seconds": percentile(complete, 0.9),
+    return {"valid_observation_seconds": valid_seconds, "completed_interval_count": len(quiet_complete),
+            "longest_idle_seconds": longest[0], "longest_idle_is_ongoing": longest[1],
+            "longest_idle_is_lower_bound": longest[2], "longest_idle_is_estimated": longest[3],
+            "longest_completed_idle_seconds": max(quiet_complete, default=None),
+            "median_idle_seconds": percentile(quiet_complete, 0.5),
+            "p75_idle_seconds": percentile(quiet_complete, 0.75), "p90_idle_seconds": percentile(quiet_complete, 0.9),
+            "excluded_active_gaps": len(complete)-len(quiet_complete),
+            "estimated_quiet_interval_count": sum(i.get("quiet_sample_observed") is None
+                for i in quiet_intervals if not i["start_is_censored"] and not i["end_is_censored"]),
             "excluded_initial_intervals": sum(bool(i["start_is_censored"]) for i in intervals),
             "right_censored_intervals": len(tails), "timeouts": rows, "histogram": histogram,
             "recommendation_minutes": recommendation, "preliminary": valid_seconds < 72*3600,
