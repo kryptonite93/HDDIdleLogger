@@ -39,7 +39,8 @@ def snapshot(request):
         disk["last_activity_at"] = disk["last_io"]["observed_at"] if disk["last_io"] else None
         disk["state"] = ("Missing" if not disk["present"] else "Excluded" if not disk["eligible"] else
                          "Disabled" if not disk["enabled"] else "Paused" if not current or not collector.healthy() else
-                         "Active recently" if disk["current_idle_seconds"] <= collector.settings.sample_interval_seconds else "Idle")
+                         "Waiting for next reading" if current["last_observed_at"] == current["started_at"] else
+                         "Active recently" if disk["current_idle_seconds"] == 0 else "Idle")
     return disks
 
 

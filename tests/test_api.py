@@ -8,6 +8,31 @@ from app.main import create_app
 from conftest import diskstats
 
 
+def test_baseline_and_restart_do_not_claim_activity(rig):
+    config, _, _ = rig
+    for restart in range(2):
+        with TestClient(create_app(config, start_collector=False)) as client:
+            collector = client.app.state.collector
+            # Use the real health check with a deterministic sample sequence.
+            base = time.monotonic()
+            def sample(second, reads):
+                config.diskstats_path.write_text(diskstats(reads=reads))
+                assert collector.sample(now=1700000000+restart*300+second, monotonic=base+second)
+
+            sample(0, 10)
+            baseline = client.get('/api/disks/sdb').json()
+            assert baseline['state'] == 'Waiting for next reading'
+            assert baseline['current_idle_is_censored'] is True
+            sample(30, 10)
+            assert client.get('/api/disks/sdb').json()['state'] == 'Idle'
+            sample(60, 11)
+            assert client.get('/api/disks/sdb').json()['state'] == 'Active recently'
+            sample(90, 11)
+            assert client.get('/api/disks/sdb').json()['state'] == 'Idle'
+            collector.last_success_mono = time.monotonic()-100
+            assert client.get('/api/disks/sdb').json()['state'] == 'Paused'
+
+
 def test_pages_and_health_and_validation(rig):
     config, _, _ = rig
     with TestClient(create_app(config, start_collector=False)) as client:
