@@ -34,6 +34,10 @@ docker run --rm --name hdd-request-proof --pull=never --network=none \
     --mount type=bind,src=/proc,dst=/host/processes,readonly \
     --mount "type=bind,src=$work/proof.py,dst=/proof.py,readonly" \
     --entrypoint python "$image" /proof.py --capture-seconds 60 || result=$?
+if [ "$result" -ne 0 ]; then
+    echo 'The test failed. Return the proof_error, cleanup and proof_failed lines above; no container operation is needed until proof_running appears.'
+    exit "$result"
+fi
 echo 'Container IDs and names for checking the result:'
 docker ps --no-trunc --format '{{.ID}} {{.Names}}'
 exit "$result"

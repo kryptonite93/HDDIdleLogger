@@ -177,6 +177,29 @@ def shfs_threads(proc):
     return result
 
 
+def failure_diagnostics(root, instance, group, step):
+    """Read only this run's kernel diagnostics; never clear shared error logs."""
+    result = {}
+    for label, path in (('instance_errors', instance/'error_log'), ('probe_errors', root/'error_log')):
+        try:
+            with path.open() as handle:
+                content = handle.read(65536)
+            blocks = re.split(r'(?=^\[)', content, flags=re.MULTILINE)
+            relevant = [block[:2048] for block in blocks if group in block]
+            if relevant:
+                result[label] = relevant[-8:]
+        except OSError:
+            pass
+    path = Path(step.get('path', ''))
+    if path.name in ('filter', 'trace_clock') and instance in path.parents:
+        try:
+            with path.open() as handle:
+                result['setting_feedback'] = handle.read(4096)
+        except OSError:
+            pass
+    return result
+
+
 def capture(library, symbols, root, proc, seconds):
     workers = shfs_threads(proc)
     if not workers:
@@ -194,6 +217,14 @@ def capture(library, symbols, root, proc, seconds):
     stopping = False
     output = lambda value: print(json.dumps(value), flush=True)
     correlation = Correlator(lambda pid, stamp: origin(proc, pid, stamp), output)
+    step = {}
+
+    def mark(operation, path, requested=None):
+        step.clear()
+        step.update(operation=operation, path=path.as_posix())
+        if requested is not None:
+            value = str(requested)
+            step.update(requested=value[:4096], requested_bytes=len(value.encode()))
 
     def stop(*_):
         nonlocal stopping
@@ -201,8 +232,10 @@ def capture(library, symbols, root, proc, seconds):
 
     old_handlers = {sig: signal.signal(sig, stop) for sig in (signal.SIGINT, signal.SIGTERM)}
     def write(path, value):
+        mark('write_setting', path, value)
         path.write_text(str(value)+'\n')
     def register(control, name, definition):
+        mark('register_probe', root/control, definition)
         with (root/control).open('a') as handle:
             handle.write(definition+'\n')
         registered.append((control, name))
@@ -210,6 +243,8 @@ def capture(library, symbols, root, proc, seconds):
         write(instance/'events'/group/name/'enable', 1)
 
     try:
+        output({'state': 'proof_setup', 'diagnostic_version': 2, 'worker_threads': len(workers)})
+        mark('create_instance', instance)
         instance.mkdir()
         owned = True
         write(instance/'tracing_on', 0)
@@ -218,6 +253,7 @@ def capture(library, symbols, root, proc, seconds):
         write(instance/'buffer_size_kb', 128)
         for option, value in (('context-info', 1), ('latency-format', 0), ('disable_on_free', 1)):
             write(instance/'options'/option, value)
+        mark('open_free_buffer', instance/'free_buffer')
         free_fd = os.open(instance/'free_buffer', os.O_RDONLY)
         register('uprobe_events', 'ctx_in', f'p:{group}/ctx_in {library}:{symbols["fuse_req_ctx"]:#x} request=%di:u64')
         register('uprobe_events', 'ctx_out', f'r:{group}/ctx_out {library}:{symbols["fuse_req_ctx"]:#x} context=$retval:u64 origin=+8($retval):u32')
@@ -226,10 +262,12 @@ def capture(library, symbols, root, proc, seconds):
             register('uprobe_events', f'cb_out_{index}', f'r:{group}/cb_out_{index} {library}:{symbols[callback]:#x}')
         register('kprobe_events', 'backing_open', f'p:{group}/backing_open do_sys_openat2 filename=+u0($arg2):string')
         register('kprobe_events', 'backing_done', f'r:{group}/backing_done do_sys_openat2 fd=$retval:s64')
+        mark('open_trace_pipe', instance/'trace_pipe')
         fd = os.open(instance/'trace_pipe', os.O_RDONLY | os.O_NONBLOCK)
         write(instance/'tracing_on', 1)
         output({'state': 'proof_running', 'seconds': seconds, 'worker_threads': len(workers),
                 'callbacks': callbacks, 'notice': 'Perform an ordinary file-open operation from a known container now. No filenames are printed.'})
+        mark('capture', instance/'trace_pipe')
         deadline = time.monotonic()+seconds
         pending = ''
         next_check = 0
@@ -266,6 +304,11 @@ def capture(library, symbols, root, proc, seconds):
                 correlation.accept(parse_line(line))
         output({'state': 'proof_finished', 'counts': dict(correlation.counts),
                 'note': 'Candidates require comparison with your known operation. No dashboard attribution or physical spin-up claim was recorded.'})
+    except OSError as exc:
+        output({'state': 'proof_error', **step, 'errno': exc.errno, 'error': str(exc),
+                'registered_probes': len(registered),
+                'kernel_diagnostics': failure_diagnostics(root, instance, group, step)})
+        raise
     finally:
         errors = []
         if owned:

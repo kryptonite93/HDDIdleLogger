@@ -1,4 +1,5 @@
 import importlib.util
+import json
 from pathlib import Path
 import struct
 
@@ -124,7 +125,7 @@ def test_setup_failure_unregisters_only_its_own_probe(tmp_path, monkeypatch, cap
     original_write = Path.write_text
     def write(path, value, *args, **kwargs):
         if path.name == 'filter':
-            raise OSError('simulated filter rejection')
+            raise OSError(22, 'Invalid argument')
         if 'instances' in path.parts:
             # Emulate kernel-created tracefs files without populating the directory.
             return len(value)
@@ -132,7 +133,7 @@ def test_setup_failure_unregisters_only_its_own_probe(tmp_path, monkeypatch, cap
     monkeypatch.setattr(Path, 'write_text', write)
     real_open = proof.os.open
     monkeypatch.setattr(proof.os, 'open', lambda path, flags: real_open(root/'uprobe_events', flags) if Path(path).name == 'free_buffer' else real_open(path, flags))
-    with pytest.raises(OSError, match='simulated filter rejection'):
+    with pytest.raises(OSError, match='Invalid argument'):
         proof.capture(Path('/library'), {'fuse_req_ctx': 123, 'fuse_fs_open': 456}, root, tmp_path/'proc', 1)
     lines = (root/'uprobe_events').read_text().splitlines()
     assert lines[0] == original.strip()
@@ -140,4 +141,36 @@ def test_setup_failure_unregisters_only_its_own_probe(tmp_path, monkeypatch, cap
     assert created.startswith('hddproof_') and created.endswith('/ctx_in')
     assert lines[2] == '-:'+created
     assert list((root/'instances').iterdir()) == []
-    assert 'cleanup_complete' in capsys.readouterr().out
+    output = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
+    error = next(item for item in output if item['state'] == 'proof_error')
+    assert error['errno'] == 22
+    assert error['operation'] == 'write_setting'
+    assert error['path'].endswith('/ctx_in/filter')
+    assert error['requested'] == 'common_pid == 123'
+    assert output[-1]['state'] == 'cleanup_complete'
+
+
+def test_diagnostic_reads_only_own_kernel_errors_without_clearing_log(tmp_path):
+    group = 'hddproof_test'
+    instance = tmp_path/'instances'/group
+    instance.mkdir(parents=True)
+    content = ('[ 1.000] trace_uprobe: error: unrelated error\n'
+               '  Command: p:other_tool/event /private/library:0\n'
+               '[ 2.000] trace_uprobe: error: invalid fetch argument\n'
+               '  Command: r:hddproof_test/ctx_out /host/libfuse.so:0x123 origin=+8($retval):u32\n'
+               '                                                  ^\n')
+    (tmp_path/'error_log').write_text(content)
+    result = proof.failure_diagnostics(tmp_path, instance, group, {'path': str(tmp_path/'uprobe_events')})
+    assert 'invalid fetch argument' in str(result)
+    assert '/private/library' not in str(result)
+    assert (tmp_path/'error_log').read_text() == content
+
+
+def test_filter_rejection_preserves_kernel_feedback(tmp_path):
+    group = 'hddproof_test'
+    instance = tmp_path/'instances'/group
+    event = instance/'events'/group/'ctx_in'
+    event.mkdir(parents=True)
+    (event/'filter').write_text('common_pid == 123\n^\nparse_error: rejected predicate')
+    result = proof.failure_diagnostics(tmp_path, instance, group, {'path': str(event/'filter')})
+    assert 'rejected predicate' in result['setting_feedback']
