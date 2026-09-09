@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS attribution_events (
  id INTEGER PRIMARY KEY, disk_name TEXT NOT NULL REFERENCES disks(device_name),
  observed_at REAL NOT NULL, quiet_seconds REAL, process TEXT NOT NULL, pid INTEGER NOT NULL,
  container_id TEXT, container_name TEXT, attribution TEXT NOT NULL,
- operation TEXT NOT NULL, bytes INTEGER NOT NULL);
+ operation TEXT NOT NULL, bytes INTEGER NOT NULL, evidence TEXT);
 CREATE INDEX IF NOT EXISTS attribution_disk_time ON attribution_events(disk_name, id);
 CREATE INDEX IF NOT EXISTS activity_disk_time ON activity_events(disk_name, observed_at);
 CREATE INDEX IF NOT EXISTS idle_disk_time ON idle_intervals(disk_name, ended_at);
@@ -47,14 +47,17 @@ class Database:
         self.path = path
         path.parent.mkdir(parents=True, exist_ok=True)
         with self.connect() as connection:
-            if connection.execute("PRAGMA user_version").fetchone()[0] > 3:
+            if connection.execute("PRAGMA user_version").fetchone()[0] > 4:
                 raise ValueError("Database was created by a newer version")
             connection.execute("PRAGMA journal_mode=WAL")
             connection.executescript(SCHEMA)
             columns = {row["name"] for row in connection.execute("PRAGMA table_info(idle_intervals)")}
             if "quiet_sample_observed" not in columns:
                 connection.execute("ALTER TABLE idle_intervals ADD COLUMN quiet_sample_observed INTEGER")
-            connection.execute("PRAGMA user_version=3")
+            source_columns = {row['name'] for row in connection.execute('PRAGMA table_info(attribution_events)')}
+            if 'evidence' not in source_columns:
+                connection.execute('ALTER TABLE attribution_events ADD COLUMN evidence TEXT')
+            connection.execute("PRAGMA user_version=4")
 
     @contextmanager
     def connect(self):
@@ -90,7 +93,7 @@ class Database:
         # A dedicated WAL read snapshot keeps export consistent without blocking the writer.
         with self.connect() as connection:
             connection.execute("BEGIN")
-            yield '{"schema_version":3'
+            yield '{"schema_version":4'
             for table in ("settings", "disks", "observation_sessions", "activity_events",
                           "idle_intervals", "collector_events", "attribution_events"):
                 yield ',' + json.dumps(table) + ':['

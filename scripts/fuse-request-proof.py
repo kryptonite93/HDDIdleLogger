@@ -89,8 +89,9 @@ def origin(proc, pid, stamp):
 
 
 class Correlator:
-    def __init__(self, resolve, emit):
+    def __init__(self, resolve, emit, all_events=False):
         self.resolve, self.emit = resolve, emit
+        self.all_events = all_events
         self.pending = {}
         self.prepared = {}
         self.scopes = {}
@@ -113,6 +114,8 @@ class Correlator:
         self.prepared.clear()
         self.scopes.clear()
         self.opens.clear()
+        if self.all_events:
+            self.emit({'state': 'correlation_reset'})
 
     def accept(self, record):
         if not record:
@@ -161,6 +164,10 @@ class Correlator:
                     if not disk:
                         self.counts['unmapped_path_opens'] += 1
                 if scope and disk and 0 <= stamp-scope['start'] <= 30:
+                    flags = int(fields.get('flags', '-1'))
+                    if self.all_events and (flags < 0 or flags & (0x10000 | 0x200000) or fields['filename'].rstrip('/') == '/mnt/'+disk.group(1)):
+                        self.counts['excluded_directory_or_unknown_flags'] += 1
+                        return
                     self.opens[tid] = (scope, disk.group(1), stamp)
             elif event == 'backing_done':
                 opened = self.opens.pop(tid, None)
@@ -178,10 +185,10 @@ class Correlator:
                         sources[key] += 1
                     else:
                         self.counts[category+'_summary_omitted_opens'] += 1
-                    if self.examples[category] < (20 if category == 'container' else 5):
+                    if self.all_events or self.examples[category] < (20 if category == 'container' else 5):
                         self.examples[category] += 1
                         self.emit({'kind': 'candidate_request_to_open', 'disk': opened[1],
-                                   'worker_tid': tid, **identity,
+                                   'worker_tid': tid, 'monotonic': stamp, **identity,
                                    'physical_spin_up_proven': False})
         except (KeyError, ValueError):
             self.counts['invalid_fields'] += 1
@@ -236,7 +243,7 @@ def failure_diagnostics(root, instance, group, step):
     return result
 
 
-def capture(library, symbols, root, proc, seconds):
+def capture(library, symbols, root, proc, seconds, output=None, tick=None, all_events=False):
     workers = shfs_threads(proc)
     if not workers:
         raise ValueError('No shfs worker threads visible through the host process mount')
@@ -251,8 +258,8 @@ def capture(library, symbols, root, proc, seconds):
     owned = False
     fd = free_fd = None
     stopping = False
-    output = lambda value: print(json.dumps(value), flush=True)
-    correlation = Correlator(lambda pid, stamp: origin(proc, pid, stamp), output)
+    output = output or (lambda value: print(json.dumps(value), flush=True))
+    correlation = Correlator(lambda pid, stamp: origin(proc, pid, stamp), output, all_events)
     step = {}
 
     def mark(operation, path, requested=None):
@@ -295,7 +302,8 @@ def capture(library, symbols, root, proc, seconds):
         for index, callback in enumerate(callbacks):
             register('uprobe_events', f'cb_in_{index}', f'p:{group}/cb_in_{index} {library}:{symbols[callback]:#x}')
             register('uprobe_events', f'cb_out_{index}', f'r:{group}/cb_out_{index} {library}:{symbols[callback]:#x}')
-        register('kprobe_events', 'backing_open', f'p:{group}/backing_open do_sys_openat2 filename=+u0($arg2):string')
+        flags = ' flags=+0($arg3):u64' if all_events else ''
+        register('kprobe_events', 'backing_open', f'p:{group}/backing_open do_sys_openat2 filename=+u0($arg2):string{flags}')
         register('kprobe_events', 'backing_done', f'r:{group}/backing_done do_sys_openat2 fd=$retval:s64')
         mark('open_trace_pipe', instance/'trace_pipe')
         fd = os.open(instance/'trace_pipe', os.O_RDONLY | os.O_NONBLOCK)
@@ -308,6 +316,8 @@ def capture(library, symbols, root, proc, seconds):
         next_check = 0
         losses = 0
         while not stopping and time.monotonic() < deadline:
+            if tick:
+                tick()
             if time.monotonic() >= next_check:
                 lost = 0
                 for stats in (instance/'per_cpu').glob('cpu*/stats'):

@@ -232,3 +232,19 @@ def test_host_summary_overflow_leaves_room_for_container_results():
     assert rows[0]['container_id'] == 'test-container'
     assert capture.counts['host_summary_omitted_opens'] == 1
     assert capture.counts['matched_backing_opens'] == sum(row['matched_backing_opens'] for row in rows)+1
+
+
+@pytest.mark.parametrize('filename,flags,expected', [
+    ('/mnt/disk10/show.mkv', '0', True),
+    ('/mnt/disk10/shows', str(0x10000), False),
+    ('/mnt/disk10/show.mkv', str(0x200000), False),
+    ('/mnt/disk10/', '0', False),
+    ('/mnt/disk10/show.mkv', '-1', False),
+])
+def test_continuous_capture_filters_directory_and_unknown_opens(filename, flags, expected):
+    emitted = []
+    capture = proof.Correlator(lambda pid, stamp: {'pid':pid, 'process':'Plex', 'container_id':'a'*64}, emitted.append, all_events=True)
+    context(capture, 10, 100, 777)
+    capture.accept((10, 1.03, 'backing_open', {'filename':filename, 'flags':flags}))
+    capture.accept((10, 1.04, 'backing_done', {'fd':'3'}))
+    assert bool([e for e in emitted if e.get('kind') == 'candidate_request_to_open']) == expected

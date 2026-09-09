@@ -17,15 +17,13 @@ function sourceStatus(s) {
   if (s.state === "retired") return s.error;
   if (!s.enabled) return "Capture is off. Existing records are kept. Enable optional capture to identify future activity sources.";
   if (s.state !== "capturing") return `Capture ${s.state}. ${s.error || "Waiting for capture to start."} Disk idle profiling continues independently.`;
-  return `Capturing ${num(s.traced_disks)} disks: requests after at least ${duration(s.idle_threshold_seconds)} without traced I/O. ${s.dropped_events ? `${num(s.dropped_events)} trace events lost; some activity may be missing.` : "No trace loss reported."} First requests after capture starts have an unknown quiet duration.`;
+  return `Matching file requests to resumed I/O on ${num(s.traced_disks)} array disks after at least ${duration(s.idle_threshold_seconds)} of quiet. Allow that quiet period after capture starts or restarts. Sources are likely matches; physical standby and spin-up are not measured.`;
 }
 async function renderSources() {
   const data = await api(`disks/${encodeURIComponent(device)}/sources?offset=${sourceOffset}&limit=25`);
   $("source-status").textContent = sourceStatus(data.status);
-  $("activity-sources").innerHTML = data.events.length ? table(["Observed at", "Quiet before request", "Process / container", "Evidence", "Request"], data.events.map(e => {
-    const owner = e.container_name || (e.container_id ? `Container ${e.container_id.slice(0,12)}` : "Host / unknown container");
-    const evidence = e.attribution === "container_cgroup" ? "Issuing process matched to container" : e.attribution === "host_or_kernel" ? "Host or kernel issuer; original requester unknown" : "Process exited or could not be resolved";
-    return `<tr><td>${esc(timestamp(e.observed_at))}</td><td>${e.quiet_seconds == null ? "Unknown · capture boundary" : duration(e.quiet_seconds)}</td><td>${esc(owner)}<small>${esc(e.process)} · PID ${num(e.pid)}</small></td><td>${esc(evidence)}</td><td>${esc(e.operation)} · ${num(e.bytes)} B</td></tr>`;
+  $("activity-sources").innerHTML = data.events.length ? table(["Observed at", "Quiet before I/O", "Process / container", "Evidence", "Observed I/O"], data.events.map(e => {
+    return `<tr><td>${esc(timestamp(e.observed_at))}</td><td>${e.evidence?.quiet_is_lower_bound ? "≥ " : ""}${duration(e.quiet_seconds)}</td><td>${esc(sourceLabel(e))}<small>${esc(sourceCandidates(e))}</small></td><td>${esc(sourceEvidence(e))}<small>Physical spin-up not verified</small></td><td>${esc(e.operation)} · ${num(e.bytes)} B</td></tr>`;
   }), `Latest captured activity sources · page ${sourceOffset/25+1}`) : '<p>No captured activity sources on this page. Earlier history cannot be attributed retroactively.</p>';
   $("sources-prev").disabled = sourceOffset === 0;
   $("sources-next").disabled = data.events.length < 25;
@@ -56,12 +54,13 @@ const timerValue = (d, minutes) => d.timeouts.find(t => t.timeout_minutes === mi
 const longestValue = d => `${d.longest_idle_is_lower_bound ? "≥ " : ""}${duration(d.longest_idle_seconds)}`;
 const longestNote = d => d.longest_idle_is_ongoing ? "Ongoing" : d.longest_idle_is_lower_bound ? "Partial observation" : d.longest_idle_is_estimated ? "Estimated from older history" : "Completed quiet period";
 const medianNote = d => d.estimated_quiet_interval_count ? "Includes older estimates" : "Observed quiet polls required";
-const sourceLabel = source => source?.container_name || (source?.container_id ? `Container ${source.container_id.slice(0,12)}` : source?.process || null);
+const sourceLabel = source => source?.attribution === "request_multiple" ? "Multiple sources" : source?.attribution === "request_unknown" ? "Unknown source" : source?.container_name || (source?.container_id ? `Container ${source.container_id.slice(0,12)}` : source?.process || null);
+const sourceEvidence = source => source.attribution === "request_likely" ? "File request + resumed I/O" : source.attribution === "request_multiple" ? "Several requests matched; cause unclear" : "I/O resumed without a matching request";
+const sourceCandidates = source => (source.evidence?.candidates || []).map(c=>c.container_name || (c.container_id ? `Container ${c.container_id.slice(0,12)}` : c.process)).join(", ");
 function sourceCell(d) {
   const source = d.latest_source;
-  if (!source) return '—<small>Replacement capture pending</small>';
-  const evidence = source.attribution === "container_cgroup" ? "Container issuer" : source.attribution === "host_or_kernel" ? "Host/kernel issuer; original source unknown" : "Process unresolved";
-  return `${esc(sourceLabel(source))}<small>${esc(evidence)}</small><small>Captured ${esc(timestamp(source.observed_at))}</small>`;
+  if (!source) return '—<small>No resumed-I/O record</small>';
+  return `${esc(sourceLabel(source))}<small>${esc(sourceEvidence(source))}</small>${source.attribution === "request_multiple" ? `<small>${esc(sourceCandidates(source))}</small>` : ""}<small>${esc(timestamp(source.observed_at))}</small>`;
 }
 const columns = [
   ["device_name","Disk",d=>`<a class="disk-link" href="/disks/${encodeURIComponent(d.device_name)}">${esc(d.device_name)}</a>`,d=>d.device_name],

@@ -1,10 +1,12 @@
 # Replacing physical-disk attribution
 
-## Current status
+**Current implementation:** [Enable optional request capture](REQUEST-CAPTURE.md). The notes below document the diagnostic investigation and validation needed for stronger physical wake-up claims.
+
+## Retirement and replacement
 
 The old `block_bio_queue` tracer has been removed. Live testing on Unraid 7.3.1 / kernel 6.18.33 showed `mdunraidd` workers for every source, so it did not identify original applications for this workload.
 
-Updating the container stops the old capture through its normal shutdown and loads a version with no tracing worker. Existing `ATTRIBUTION_ENABLED=true` settings no longer start tracing. Idle profiling and timer modeling continue. Old source rows are preserved in CSV/JSON exports only and no longer populate the dashboard. There is no replacement capture running yet.
+Existing `ATTRIBUTION_ENABLED=true` settings no longer start tracing. Idle profiling and timer modeling continue. Old source rows are preserved in CSV/JSON exports only and no longer populate the dashboard. The replacement is separately opt-in through `REQUEST_ATTRIBUTION_ENABLED=true` and the mounts in the setup guide. It reports likely sources from request-scoped opens near resumed physical I/O, with ambiguity and unknown results shown explicitly.
 
 ## Replacement investigation
 
@@ -42,11 +44,11 @@ The first successful host capture recorded 1,198 matched backing opens, includin
 
 The version 4 capture during user-reported Plex episode playback identified `Plex Transcoder` in the Docker container named `plex`, with one matched backing open on **disk10**. The captured container ID matched the Docker listing included in that run. It separately recorded one Deluge open on disk4, 20 Unpackerr opens across eight disks, and 134 Krusader opens across all 21 array disks. Host `emhttpd` accounted for 1,218 opens. These are counts of successful opens, not read counts or spin-up counts. All 1,374 matched opens were represented in the summaries, 156 were container-linked, and the run finished with `cleanup_complete` and no reported trace-loss or callback-mismatch error.
 
-The user independently confirmed that the played episode resides on disk10, validating this Plex-to-backing-disk observation. This is evidence for identifying original container requesters through shfs rather than reporting an array worker. The other containers were concurrent background activity, not a controlled two-container test with known file locations. Directory opens and cached file opens can appear in these results without any physical disk I/O. Request-scoped read/write evidence, mapping `diskN` to the profiler's physical device, and distinguishing actual disk activity remain necessary before presenting a likely wake source.
+The user independently confirmed that the played episode resides on disk10, validating this Plex-to-backing-disk observation. This is evidence for identifying original container requesters through shfs rather than reporting an array worker. The other containers were concurrent background activity, not a controlled two-container test with known file locations. Directory opens and cached file opens can appear in these diagnostic results without any physical disk I/O. The optional integration now filters directory-flagged opens, maps `diskN` through Unraid's `disks.ini`, and requires physical counter activity; its connection from an open to that counter activity remains a time correlation requiring live acceptance.
 
-**Scope:** `candidate_request_to_open` means a candidate connection to a successful backing-file open, not a proven physical disk read or spin-up. Opens may be served from cache. This proof does not cover already-open file descriptors, relative backing paths, direct `/mnt/diskN` access, deferred writes, parity work or newly created shfs workers. Container identity can be unavailable for short-lived processes. Unsupported operations remain unknown. Production attribution remains disabled until the acceptance gate below passes.
+**Scope:** `candidate_request_to_open` means a candidate connection to a successful backing-file open, not a proven physical disk read or spin-up. Opens may be served from cache. This proof does not cover already-open file descriptors, relative backing paths, direct `/mnt/diskN` access, deferred writes, parity work or newly created shfs workers. Container identity can be unavailable for short-lived processes. Unsupported operations remain unknown. The integration restarts capture when worker membership changes; capture remains off by default.
 
-### Acceptance gate before a replacement backend ships
+### Acceptance checks and stronger causal claims
 
 1. Observe one known container's operation through `/mnt/user` and recover the original request PID/request identifier at dispatch.
 2. Connect it to an actual backing disk access within that request, not merely by timestamp proximity. Verify container identity separately.
@@ -54,11 +56,11 @@ The user independently confirmed that the played episode resides on disk10, vali
 4. Verify request completion, worker reuse, short-lived processes, restart and lost-event handling do not retain a stale source.
 5. Test cached access, buffered writes, metadata operations and parity work. Leave unsupported causal connections unknown and do not claim a physical spin-up from file activity alone.
 
-Until that proof succeeds, the dashboard says replacement capture is pending. No guessed container names or replacement production tracer will be presented as working.
+The request-to-open observation above validates one part of this chain. The optional integration exposes the remaining uncertainty as likely, multiple or unknown sources and does not claim proven spin-ups. Its new counter matching and directory filtering still need the live acceptance procedure in the setup guide; the checks above remain necessary for stronger causal claims.
 
 ## Existing extra mounts and permissions
 
-The retired tracer no longer uses `/host/tracing`, `/host/processes` or `/host/docker-containers`. They can be removed from the container; ordinary profiling only needs the original appdata, diskstats and sysfs mounts. The replacement's requirements will be chosen after the compatibility test.
+Ordinary profiling only needs the original appdata, diskstats and sysfs mounts. Optional request capture also uses tracing, host process metadata, libfuse, Unraid mapping and optional Docker metadata mounts, as listed in the setup guide. Those extra mounts can be removed when request capture is disabled.
 
 Root mode may have created root-owned SQLite sidecar files. If reverting to the standard `--user=99:100 --cap-drop=ALL --security-opt=no-new-privileges:true`, stop the container and restore ownership of this app's appdata directory to 99:100 from Unraid first. Do not clear the database. Keep Privileged off.
 

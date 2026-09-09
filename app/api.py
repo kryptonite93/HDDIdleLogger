@@ -1,5 +1,6 @@
 import csv
 import io
+import json
 import time
 from collections import defaultdict
 from typing import Literal
@@ -24,8 +25,10 @@ def activity_sources(name: str, request: Request, offset: int = Query(0, ge=0), 
     db = request.app.state.db
     if not db.rows('SELECT 1 FROM disks WHERE device_name=?', (name,)):
         raise HTTPException(404, 'Disk not found')
-    return {'status': request.app.state.attribution.status(), 'offset': offset, 'limit': limit,
-            'events': []}  # Retired physical-layer records remain available in exports only.
+    rows = db.rows("SELECT * FROM attribution_events WHERE disk_name=? AND attribution IN ('request_likely','request_multiple','request_unknown') ORDER BY id DESC LIMIT ? OFFSET ?", (name, limit, offset))
+    for row in rows:
+        row['evidence'] = json.loads(row['evidence']) if row['evidence'] else None
+    return {'status': request.app.state.attribution.status(), 'offset': offset, 'limit': limit, 'events': rows}
 
 
 def snapshot(request):
@@ -44,7 +47,10 @@ def snapshot(request):
             event = connection.execute("SELECT * FROM activity_events WHERE disk_name=? ORDER BY id DESC LIMIT 1",
                                        (disk["device_name"],)).fetchone()
             disk["last_io"] = dict(event) if event else None
-            disk["latest_source"] = None  # Do not present retired worker attribution as a cause.
+            source = connection.execute("SELECT * FROM attribution_events WHERE disk_name=? AND attribution IN ('request_likely','request_multiple','request_unknown') ORDER BY id DESC LIMIT 1", (disk['device_name'],)).fetchone()
+            disk['latest_source'] = dict(source) if source else None
+            if source:
+                disk['latest_source']['evidence'] = json.loads(source['evidence']) if source['evidence'] else None
     for disk in disks:
         name = disk["device_name"]
         disk.update(analyze(intervals[name], sessions[name], collector.settings))
@@ -152,12 +158,18 @@ class ClearConfirmation(BaseModel):
 @router.post("/data/clear")
 def clear_data(body: ClearConfirmation, request: Request):
     collector, db = request.app.state.collector, request.app.state.db
+    source = request.app.state.attribution
+    restart_source = hasattr(source, 'start') and source.thread is not None
+    if restart_source:
+        source.stop()
     with collector.lock, db.connect() as connection:
         for table in ("attribution_events", "activity_events", "idle_intervals", "observation_sessions", "collector_events"):
             connection.execute(f"DELETE FROM {table}")
         collector.last_success_at = collector.last_success_mono = None
         collector.previous_mono = collector.previous_wall = None
         collector.wake_event.set()
+    if restart_source:
+        source.start()
     return {"cleared": True, "message": "History cleared. Disk selection and settings retained."}
 
 

@@ -1,0 +1,17 @@
+# Optional override: docker compose -f docker-compose.yml -f docker-compose.request-capture.yml up -d
+services:
+  hdd-idle-profiler:
+    user: "0:0"
+    cap_add:
+      - DAC_OVERRIDE
+    stop_grace_period: 25s
+    environment:
+      REQUEST_ATTRIBUTION_ENABLED: "true"
+      REQUEST_QUIET_SECONDS: "60"
+    volumes:
+      - /sys/kernel/debug/tracing:/host/tracing:rw
+      - /proc:/host/processes:ro
+      - /usr/lib64/libfuse3.so.3.16.2:/host/libfuse.so:ro
+      # Directory mount follows atomic replacements of disks.ini.
+      - /var/local/emhttp:/host/unraid:ro
+      - /var/lib/docker/containers:/host/docker-containers:ro

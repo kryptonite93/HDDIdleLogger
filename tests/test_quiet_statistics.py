@@ -92,7 +92,7 @@ def test_upgrade_preserves_legacy_history_and_settings(rig):
     for _ in range(2):
         upgraded = Database(db.path)
         exported = json.loads(''.join(upgraded.export_json()))
-        assert exported['schema_version'] == 3
+        assert exported['schema_version'] == 4
         for table in tables:
             rows = exported[table]
             if table == 'idle_intervals':
@@ -117,5 +117,5 @@ def test_api_exposes_ongoing_longest_and_quiet_stats(rig):
         assert result['excluded_active_gaps'] == 1
         assert sum(b['count'] for b in result['histogram']) == 1
         exported = client.get('/api/export/complete.json').json()
-        assert exported['schema_version'] == 3
+        assert exported['schema_version'] == 4
         assert [i['quiet_sample_observed'] for i in exported['idle_intervals']] == [0, 0, 1]

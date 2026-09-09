@@ -7,6 +7,7 @@ RUN pip install --no-cache-dir -r requirements.txt \
     && useradd --uid 1000 --gid profiler --no-create-home --shell /usr/sbin/nologin profiler \
     && mkdir /data && chown profiler:profiler /data
 COPY app ./app
+COPY scripts/fuse-request-proof.py ./scripts/fuse-request-proof.py
 USER 1000:1000
 VOLUME ["/data"]
 EXPOSE 8080

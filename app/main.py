@@ -13,6 +13,7 @@ from .collector import Collector
 from .config import Config, Settings
 from .database import Database
 from .source_status import SourceStatus
+from .request_capture import RequestCapture
 
 
 def create_app(config=None, start_collector=True):
@@ -25,12 +26,17 @@ def create_app(config=None, start_collector=True):
         db.save_settings(settings)
         collector = Collector(db, config, settings)
         application.state.db, application.state.collector = db, collector
-        application.state.attribution = SourceStatus()
+        source_capture = RequestCapture(db, config) if os.getenv('REQUEST_ATTRIBUTION_ENABLED', '').lower() == 'true' else SourceStatus()
+        application.state.attribution = source_capture
         if start_collector:
             collector.start()
+            if isinstance(source_capture, RequestCapture):
+                source_capture.start()
         try:
             yield
         finally:
+            if isinstance(source_capture, RequestCapture):
+                source_capture.stop()
             collector.stop()
 
     application = FastAPI(title="HDD Idle Profiler", lifespan=lifespan, docs_url=None, redoc_url=None)

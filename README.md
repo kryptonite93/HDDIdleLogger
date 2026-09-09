@@ -1,6 +1,6 @@
 # HDD Idle Profiler
 
-The physical-disk activity tracer has been **removed**: on Unraid it identified `mdunraidd` workers rather than the originating container. Idle profiling continues normally. Request-level tracing is under investigation; see [replacement progress and compatibility check](unraid/ATTRIBUTION.md). Old source records are retained for export but excluded from the dashboard.
+Optional [likely source capture](unraid/REQUEST-CAPTURE.md) identifies original container/process requests near resumed disk I/O and shows them in the main disk table. It requires additional container permissions and mounts and remains off by default. The old physical-disk tracer that reported `mdunraidd` has been removed; its source records remain exportable. The replacement reports likely, multiple or unknown sources, not proven physical spin-ups.
 
 A personal Unraid workload profiler. Observe physical-disk I/O for several days, then compare 15, 30, 60 and 120 minute spin-down delays before changing anything in Unraid.
 
@@ -8,7 +8,7 @@ A personal Unraid workload profiler. Observe physical-disk I/O for several days,
 
 ## Current status
 
-The implementation includes the collector, SQLite persistence, timeout analysis, responsive UI, settings, CSV/JSON exports, tests, Docker files and Unraid XML template. All 23 Python tests and local browser checks passed. The [public repository](https://github.com/kryptonite93/HDDIdleLogger) is live; [GitHub Actions successfully built, smoke-tested and published the image](https://github.com/kryptonite93/HDDIdleLogger/actions/runs/34164617454). Image: `ghcr.io/kryptonite93/hddidlelogger:latest`. Public image access and the raw XML download were verified without GitHub credentials. Real Unraid acceptance remains outstanding.
+The implementation includes the collector, SQLite persistence, timeout analysis, responsive UI, settings, CSV/JSON exports, optional request capture, tests, Docker files and Unraid XML templates. [GitHub Actions](https://github.com/kryptonite93/HDDIdleLogger/actions) runs the test suite and container smoke checks before publishing `ghcr.io/kryptonite93/hddidlelogger:latest`. Request tracing identified Plex on disk10, independently confirmed by the owner. The new counter correlation and directory filtering still require live Unraid acceptance.
 
 The owner requested personal use and has not chosen a license. No public reuse license is assigned in this repository. Upstream Python dependencies retain their own licenses. Community Applications submission, icon and support-thread assets are deferred.
 
