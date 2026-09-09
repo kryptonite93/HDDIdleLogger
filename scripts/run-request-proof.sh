@@ -23,7 +23,11 @@ cleanup() {
     rmdir "$work"
 }
 trap cleanup EXIT
-curl -fsSL https://raw.githubusercontent.com/kryptonite93/HDDIdleLogger/main/scripts/fuse-request-proof.py -o "$work/proof.py"
+# Pin the payload as well as the launcher used for a host test. A mutable
+# main URL can still return an older cached script immediately after release.
+proof_revision=b18bde6ac14a6ac608dd1f544eb79537d3bbb84c
+echo "Downloading diagnostic version 4 from revision $proof_revision"
+curl -fsSL "https://raw.githubusercontent.com/kryptonite93/HDDIdleLogger/$proof_revision/scripts/fuse-request-proof.py" -o "$work/proof.py"
 echo 'Starting a 60-second test. When proof_running appears, use a known container to open an existing file on an array-backed user share.'
 result=0
 docker run --rm --name hdd-request-proof --pull=never --network=none \
