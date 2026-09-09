@@ -55,16 +55,24 @@ const timerValue = (d, minutes) => d.timeouts.find(t => t.timeout_minutes === mi
 const longestValue = d => `${d.longest_idle_is_lower_bound ? "≥ " : ""}${duration(d.longest_idle_seconds)}`;
 const longestNote = d => d.longest_idle_is_ongoing ? "Ongoing" : d.longest_idle_is_lower_bound ? "Partial observation" : d.longest_idle_is_estimated ? "Estimated from older history" : "Completed quiet period";
 const medianNote = d => d.estimated_quiet_interval_count ? "Includes older estimates" : "Observed quiet polls required";
+const sourceLabel = source => source?.container_name || (source?.container_id ? `Container ${source.container_id.slice(0,12)}` : source?.process || null);
+function sourceCell(d) {
+  const source = d.latest_source;
+  if (!source) return '—<small>No source captured yet</small>';
+  const evidence = source.attribution === "container_cgroup" ? "Container issuer" : source.attribution === "host_or_kernel" ? "Host/kernel issuer; original source unknown" : "Process unresolved";
+  return `${esc(sourceLabel(source))}<small>${esc(evidence)}</small><small>Captured ${esc(timestamp(source.observed_at))}</small>`;
+}
 const columns = [
   ["device_name","Disk",d=>`<a class="disk-link" href="/disks/${encodeURIComponent(d.device_name)}">${esc(d.device_name)}</a>`,d=>d.device_name],
   ["model","Model / serial",d=>`<div class="model">${esc(d.model || "Model unavailable")}<small>${esc(d.serial || (d.rotational == null ? "Rotational status unknown" : ""))}</small></div>`,d=>d.model || ""],
   ["state","State",d=>`<span class="status ${stateClass(d.state)}">${esc(d.state)}</span>`,d=>d.state],
+  ["latest_source","Latest likely source",sourceCell,d=>sourceLabel(d.latest_source)],
   ["current_idle_seconds","Current idle",d=>`${d.current_idle_is_censored ? "≥ " : ""}${duration(d.current_idle_seconds)}`,d=>d.current_idle_seconds],
   ["last_activity_at","Last activity",d=>esc(timestamp(d.last_activity_at)),d=>d.last_activity_at],
   ["longest_idle_seconds","Longest observed",d=>`${longestValue(d)}<small>${d.longest_idle_seconds == null ? "No quiet period yet" : longestNote(d)}</small>`,d=>d.longest_idle_seconds],
   ["median_idle_seconds","Median quiet",d=>`${duration(d.median_idle_seconds)}<small>${d.median_idle_seconds == null ? "No completed quiet period" : medianNote(d)}</small>`,d=>d.median_idle_seconds],
-  ["cycles30","30m cycles/day",d=>timerValue(d,30)==null ? "Not tested" : num(timerValue(d,30)),d=>timerValue(d,30)],
-  ["cycles60","60m cycles/day",d=>timerValue(d,60)==null ? "Not tested" : num(timerValue(d,60)),d=>timerValue(d,60)],
+  ["cycles30","Spin-ups/day · 30min timer",d=>timerValue(d,30)==null ? "Not tested" : num(timerValue(d,30)),d=>timerValue(d,30)],
+  ["cycles60","Spin-ups/day · 60min timer",d=>timerValue(d,60)==null ? "Not tested" : num(timerValue(d,60)),d=>timerValue(d,60)],
   ["recommendation_minutes","Suggested timer",d=>`${esc(recommendation(d))}<small>${duration(d.valid_observation_seconds)} observed</small>`,d=>d.recommendation_minutes]
 ];
 function renderDisks() {
@@ -105,6 +113,7 @@ async function refresh() {
     if (page === "dashboard") {
       $("summary").innerHTML = metric("Collection uptime",duration(status.uptime_seconds),status.healthy ? "Collector running" : "Check collector status") + metric("Valid observation",duration(status.minimum_valid_observation_seconds),"Shortest record among selected disks") + metric("Disks selected",`${status.enabled_disks} / ${status.discovered_disks}`,"Enabled, eligible and present") + metric("Idle beyond 30 minutes",status.idle_over_30_minutes,"At the last successful reading") + metric("Array timer",recommendation(status),"Manually applied in Unraid");
       diskData = await api("disks");
+      $("source-status").textContent = sourceStatus(await api("attribution/status"));
       $("disk-count").textContent = `${diskData.length} discovered · Sort any column to compare workloads`;
       const focused = document.activeElement?.dataset.sort;
       const focusedDisk = document.activeElement?.closest('#disk-table a')?.getAttribute('href');

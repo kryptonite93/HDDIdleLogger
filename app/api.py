@@ -45,6 +45,9 @@ def snapshot(request):
             event = connection.execute("SELECT * FROM activity_events WHERE disk_name=? ORDER BY id DESC LIMIT 1",
                                        (disk["device_name"],)).fetchone()
             disk["last_io"] = dict(event) if event else None
+            source = connection.execute("SELECT * FROM attribution_events WHERE disk_name=? ORDER BY id DESC LIMIT 1",
+                                        (disk["device_name"],)).fetchone()
+            disk["latest_source"] = dict(source) if source else None
     for disk in disks:
         name = disk["device_name"]
         disk.update(analyze(intervals[name], sessions[name], collector.settings))

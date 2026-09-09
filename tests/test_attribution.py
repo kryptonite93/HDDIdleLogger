@@ -111,6 +111,20 @@ def test_disabled_by_default(rig):
         assert client.get('/api/attribution/status').json()['state'] == 'disabled'
 
 
+def test_dashboard_returns_latest_source_per_disk(rig):
+    config, _, _ = rig
+    with TestClient(create_app(config, start_collector=False)) as client:
+        assert client.app.state.collector.sample()
+        assert client.get('/api/disks').json()[0]['latest_source'] is None
+        with client.app.state.db.connect() as connection:
+            for name in ('old-container', 'latest-container'):
+                connection.execute('''INSERT INTO attribution_events(disk_name,observed_at,process,pid,
+                    container_name,attribution,operation,bytes) VALUES ('sdb',1,'process',1,?,'container_cgroup','R',512)''', (name,))
+        source = client.get('/api/disks').json()[0]['latest_source']
+        assert source['container_name'] == 'latest-container'
+        assert source == client.get('/api/disks/sdb/sources').json()['events'][0]
+
+
 def test_loss_breaks_continuity(rig, monkeypatch):
     config, db, collector = rig
     capture = Attribution(db, config, collector)

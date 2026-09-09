@@ -28,6 +28,8 @@
     <section>
       <div class="section-heading"><div><h2>Your disks</h2><p id="disk-count">Discovering physical disks…</p></div><a href="/settings">Manage selection</a></div>
       <div id="disk-table" class="table-wrap" tabindex="0" aria-label="Disk observations, scroll horizontally for more columns"></div>
+      <p class="help">Spin-ups/day estimates how often each disk would wake with a 30- or 60-minute spin-down timer, averaged over valid observation time. These are modeled values, not measured physical spin-ups. Latest likely source shows the most recent captured request, which may be older than the last activity.</p>
+      <p id="source-status" class="help" role="status">Checking optional source capture…</p>
       <div id="empty" class="empty" hidden><h2>Your observation starts here.</h2><p>Mount host <code>/proc/diskstats</code> read-only at <code>/host/proc/diskstats</code>. Selected physical HDDs will appear after the next sample.</p><p>No data yet is expected on a fresh installation. Check the collector message above and review <a href="/settings">device filters</a>.</p></div>
     </section>
     <aside class="notice"><strong>A model, not a power-state reading.</strong> Idle time is measured from observed block I/O. Timing is accurate to the sampling interval. Recommendations remain preliminary until each disk has 72 valid hours.</aside>
