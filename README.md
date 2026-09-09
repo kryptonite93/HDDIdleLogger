@@ -1,5 +1,7 @@
 # HDD Idle Profiler
 
+Optional **activity source capture** shows the process/container issuing a disk request after a quiet period. It runs inside the existing container with explicitly enabled host access. See [Unraid setup and limitations](unraid/ATTRIBUTION.md). It reports likely activity sources, not confirmed physical spin-ups, and does not attribute older history.
+
 A personal Unraid workload profiler. Observe physical-disk I/O for several days, then compare 15, 30, 60 and 120 minute spin-down delays before changing anything in Unraid.
 
 > HDD Idle Profiler observes Linux block-device I/O counters and models what would happen under different spin-down timeouts. It does not read your files, issue drive power commands, change Unraid settings, or verify actual platter power state. Treat its results as workload guidance, not a guarantee of drive behavior. Keep the web interface on a trusted LAN or VPN and do not expose it directly to the public Internet.

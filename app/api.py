@@ -14,6 +14,21 @@ from .config import Settings
 router = APIRouter(prefix="/api")
 
 
+@router.get("/attribution/status")
+def attribution_status(request: Request):
+    return request.app.state.attribution.status()
+
+
+@router.get("/disks/{name}/sources")
+def activity_sources(name: str, request: Request, offset: int = Query(0, ge=0), limit: int = Query(25, ge=1, le=100)):
+    db = request.app.state.db
+    if not db.rows('SELECT 1 FROM disks WHERE device_name=?', (name,)):
+        raise HTTPException(404, 'Disk not found')
+    return {'status': request.app.state.attribution.status(), 'offset': offset, 'limit': limit,
+            'events': db.rows('SELECT * FROM attribution_events WHERE disk_name=? ORDER BY id DESC LIMIT ? OFFSET ?',
+                             (name, limit, offset))}
+
+
 def snapshot(request):
     collector = request.app.state.collector
     db = request.app.state.db
@@ -138,7 +153,7 @@ class ClearConfirmation(BaseModel):
 def clear_data(body: ClearConfirmation, request: Request):
     collector, db = request.app.state.collector, request.app.state.db
     with collector.lock, db.connect() as connection:
-        for table in ("activity_events", "idle_intervals", "observation_sessions", "collector_events"):
+        for table in ("attribution_events", "activity_events", "idle_intervals", "observation_sessions", "collector_events"):
             connection.execute(f"DELETE FROM {table}")
         collector.last_success_at = collector.last_success_mono = None
         collector.previous_mono = collector.previous_wall = None
@@ -170,8 +185,9 @@ def export(kind: str, request: Request):
                 for d in snapshot(request) for r in d["timeouts"]]
         columns = list(data[0]) if data else ["device_name", "timeout_minutes", "completed_spin_ups", "spun_down_hours"]
         stream = csv_rows(data, columns)
-    elif kind in ("idle-intervals.csv", "activity-events.csv"):
-        table = {"idle-intervals.csv": "idle_intervals", "activity-events.csv": "activity_events"}[kind]
+    elif kind in ("idle-intervals.csv", "activity-events.csv", "activity-sources.csv"):
+        table = {"idle-intervals.csv": "idle_intervals", "activity-events.csv": "activity_events",
+                 "activity-sources.csv": "attribution_events"}[kind]
 
         def generate():
             with db.connect() as connection:

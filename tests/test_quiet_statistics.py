@@ -84,6 +84,7 @@ def test_upgrade_preserves_legacy_history_and_settings(rig):
     collector.stop()
     # Recreate the v1 layout, which had no quiet-poll evidence column.
     with db.connect() as connection:
+        connection.execute('DROP TABLE attribution_events')
         connection.execute('ALTER TABLE idle_intervals DROP COLUMN quiet_sample_observed')
         connection.execute('PRAGMA user_version=1')
     tables = ('settings', 'disks', 'observation_sessions', 'activity_events', 'idle_intervals', 'collector_events')
@@ -91,7 +92,7 @@ def test_upgrade_preserves_legacy_history_and_settings(rig):
     for _ in range(2):
         upgraded = Database(db.path)
         exported = json.loads(''.join(upgraded.export_json()))
-        assert exported['schema_version'] == 2
+        assert exported['schema_version'] == 3
         for table in tables:
             rows = exported[table]
             if table == 'idle_intervals':
@@ -116,5 +117,5 @@ def test_api_exposes_ongoing_longest_and_quiet_stats(rig):
         assert result['excluded_active_gaps'] == 1
         assert sum(b['count'] for b in result['histogram']) == 1
         exported = client.get('/api/export/complete.json').json()
-        assert exported['schema_version'] == 2
+        assert exported['schema_version'] == 3
         assert [i['quiet_sample_observed'] for i in exported['idle_intervals']] == [0, 0, 1]

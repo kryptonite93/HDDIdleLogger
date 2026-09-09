@@ -18,6 +18,7 @@
   <Config Name="Host sysfs" Target="/host/sys" Default="/sys" Mode="ro" Description="Read-only metadata. Full tree resolves relative /sys/block links; the app reads only block metadata." Type="Path" Display="advanced" Required="false" Mask="false">/sys</Config>
   <Config Name="Timezone" Target="TZ" Default="America/Toronto" Mode="" Description="Initial display timezone" Type="Variable" Display="always" Required="true" Mask="false">America/Toronto</Config>
   <Config Name="Sample interval" Target="SAMPLE_INTERVAL_SECONDS" Default="30" Mode="" Description="Initial cadence, minimum 10 seconds; UI settings override after first start" Type="Variable" Display="advanced" Required="true" Mask="false">30</Config>
+  <Config Name="Activity source capture" Target="ATTRIBUTION_ENABLED" Default="false" Mode="" Description="Optional. Requires extra permissions and mounts: see unraid/ATTRIBUTION.md in the project. Leave false for standard profiling." Type="Variable" Display="advanced" Required="false" Mask="false">false</Config>
   <Config Name="Include regex" Target="INCLUDE_DEVICE_REGEX" Default="^sd[a-z]+$" Mode="" Description="Initial whole-disk filter" Type="Variable" Display="advanced" Required="true" Mask="false">^sd[a-z]+$</Config>
   <Config Name="Exclude regex" Target="EXCLUDE_DEVICE_REGEX" Default="" Mode="" Description="Additional exclusion regex" Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
 </Container>

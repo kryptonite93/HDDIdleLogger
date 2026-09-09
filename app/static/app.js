@@ -12,6 +12,23 @@ function duration(value) {
   return `${Math.floor(value/86400)}d ${Math.floor(value%86400/3600)}h`;
 }
 let timezone, diskData = [], sortKey = "device_name", sortDirection = 1, eventOffset = 0;
+let sourceOffset = 0;
+function sourceStatus(s) {
+  if (!s.enabled) return "Capture is off. Existing records are kept. Enable optional capture to identify future activity sources.";
+  if (s.state !== "capturing") return `Capture ${s.state}. ${s.error || "Waiting for capture to start."} Disk idle profiling continues independently.`;
+  return `Capturing ${num(s.traced_disks)} disks: requests after at least ${duration(s.idle_threshold_seconds)} without traced I/O. ${s.dropped_events ? `${num(s.dropped_events)} trace events lost; some activity may be missing.` : "No trace loss reported."} First requests after capture starts have an unknown quiet duration.`;
+}
+async function renderSources() {
+  const data = await api(`disks/${encodeURIComponent(device)}/sources?offset=${sourceOffset}&limit=25`);
+  $("source-status").textContent = sourceStatus(data.status);
+  $("activity-sources").innerHTML = data.events.length ? table(["Observed at", "Quiet before request", "Process / container", "Evidence", "Request"], data.events.map(e => {
+    const owner = e.container_name || (e.container_id ? `Container ${e.container_id.slice(0,12)}` : "Host / unknown container");
+    const evidence = e.attribution === "container_cgroup" ? "Issuing process matched to container" : e.attribution === "host_or_kernel" ? "Host or kernel issuer; original requester unknown" : "Process exited or could not be resolved";
+    return `<tr><td>${esc(timestamp(e.observed_at))}</td><td>${e.quiet_seconds == null ? "Unknown · capture boundary" : duration(e.quiet_seconds)}</td><td>${esc(owner)}<small>${esc(e.process)} · PID ${num(e.pid)}</small></td><td>${esc(evidence)}</td><td>${esc(e.operation)} · ${num(e.bytes)} B</td></tr>`;
+  }), `Latest captured activity sources · page ${sourceOffset/25+1}`) : '<p>No captured activity sources on this page. Earlier history cannot be attributed retroactively.</p>';
+  $("sources-prev").disabled = sourceOffset === 0;
+  $("sources-next").disabled = data.events.length < 25;
+}
 function timestamp(value) {
   return value == null ? "Not yet observed" : new Date(value*1000).toLocaleString(undefined, {timeZone:timezone});
 }
@@ -105,6 +122,7 @@ async function refresh() {
       bars("down-chart",d.timeouts,"spun_down_hours_per_day"); bars("cycles-chart",d.timeouts,"spin_ups_per_day"); bars("histogram",d.histogram,"count","label","");
       $("censor-note").textContent = `${d.excluded_initial_intervals} completed initial intervals excluded because their beginning is unknown. ${d.right_censored_intervals} known intervals ended with an observation boundary; only their proven portion contributes to modeled down time, with no completed spin-up. Open intervals contribute current potential down time only. Collector downtime is never bridged. Last I/O: ${d.last_io ? `${num(d.last_io.bytes_read_delta)} B read, ${num(d.last_io.bytes_written_delta)} B written, ${num(d.last_io.flushes_delta)} flushes.` : "not yet observed."}`;
       await renderEvents();
+      await renderSources();
       $("censor-note").textContent = `Quiet statistics require at least one reading with unchanged counters between activity readings. ${d.excluded_active_gaps} active-sample gaps excluded from the median and histogram. ${d.estimated_quiet_interval_count} completed quiet periods estimated from older history using the session's sampling interval; delayed older polls can affect these estimates. Longest observed includes ongoing and partial quiet periods, marked ≥. ` + $("censor-note").textContent;
     } else if (page === "analysis") {
       const a = await api("analysis");
@@ -112,6 +130,7 @@ async function refresh() {
       $("array-table").innerHTML = table(["Delay","Spin-ups / day","Disk-hours down / day","Disks benefiting","Above cycling limit"], a.timeouts.map(t=>`<tr><td>${num(t.timeout_minutes)} min</td><td class="number">${num(t.spin_ups_per_day)}</td><td class="number">${num(t.spun_down_disk_hours_per_day)}</td><td class="number">${t.benefiting_disks}</td><td class="number ${t.high_cycling_disks ? "warning" : ""}">${t.high_cycling_disks}</td></tr>`));
       bars("array-down-chart",a.timeouts,"spun_down_disk_hours_per_day"); bars("array-cycles-chart",a.timeouts,"spin_ups_per_day");
     } else if (page === "settings") {
+      $("source-status").textContent = sourceStatus(await api("attribution/status"));
       updateDiskSelection(await api("disks"));
     }
   } catch (error) {
@@ -149,6 +168,9 @@ if (page === "dashboard") $("disk-table").addEventListener("click", event=>{
 });
 if (page === "disk") for (const [id, delta] of [["events-prev",-25],["events-next",25]]) $(id).addEventListener("click",async()=>{
   eventOffset=Math.max(0,eventOffset+delta); try {await renderEvents();} catch(error) {$("connection-error").hidden=false; $("connection-error").textContent=error.message;}
+});
+if (page === "disk") for (const [id, delta] of [["sources-prev",-25],["sources-next",25]]) $(id).addEventListener("click",async()=>{
+  sourceOffset=Math.max(0,sourceOffset+delta); try {await renderSources();} catch(error) {$("source-status").textContent=`Could not load activity sources: ${error.message}`;}
 });
 if (page === "settings") {
   $("save-settings").disabled = true;
